@@ -405,6 +405,8 @@
 			};
 		})(root.accounting);
 
+
+		// root = window since this is the first argument of function(root, undefined)
 		// Declare `fx` on the root (global/window) object:
 		root['accounting'] = lib;
 	}
