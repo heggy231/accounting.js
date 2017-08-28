@@ -696,3 +696,179 @@ librarySystem('sandwichLibrary', function() {
 
 - Use: librarySystem
 librarySystem('sandwichLibrary')
+
+- IIFE the librarySystem and run through debugger
+(function () {
+  debugger;
+  var sandwichLibrary = librarySystem('sandwichLibrary');
+
+  console.log(sandwichLibrary);
+})();
+
+// pay attention to closure, local, global each step
+
+Compare and contrast libSystem.js vs. window.js.
+libSystem: One global variable period.
+window: One global variable per library
+
+- Create a dynamic system that adopts to what programmer wants to 
+do.  Program that knows to adopt to the approach that programmer wants to take.
+Either libSystem vs. window.
+
+*** if libSystem is defined go with libSystem approach
+if not; go with window approach
+
+## DynamicSystem function: 
+
+version 1 (adds both window and lib system functionality
+but it is not dynamic): 
+(function() {
+  // step 1: copy what is common about both
+  var breads = {
+    wheat: 'The healthy option',
+    white: 'The unhealthy option'
+  };
+
+  var fillings = {
+    turkey: 'For less fat sandwiches',
+    hummus: 'For Greeks'
+  };
+
+  var sandwichLibrary = {
+    breads: breads,
+    fillings: fillings
+  };
+  // Handle window case.
+  window.sandwichLibrary = sandwichLibrary;
+
+  // Handle librarySystem case.
+  librarySystem('sandwichLibrary', function() {
+    return sandwichLibrary;
+  });
+
+})();
+
+version 2 (let's add dynamically choosing which system):
+
+(function() {
+  // step 1: copy what is common about both
+  var breads = {
+    wheat: 'The healthy option',
+    white: 'The unhealthy option'
+  };
+
+  var fillings = {
+    turkey: 'For less fat sandwiches',
+    hummus: 'For Greeks'
+  };
+
+  var sandwichLibrary = {
+    breads: breads,
+    fillings: fillings
+  };
+
+  // if librarySystem is undefined - we know developer
+  //  is not using libSystem
+  if (/* librarySystem function exists */) {
+    // Handle librarySystem case.
+    librarySystem('sandwichLibrary', function() {
+      return sandwichLibrary;
+    });    
+  } else {
+    // Handle window case.
+    window.sandwichLibrary = sandwichLibrary;
+  }
+
+
+})();
+
+version 3 (how do we check if library system exists?)
+
+In console:
+// returns variable type what we are given
+typeof 3
+// "number"
+
+typeof 'heggy'
+"string"
+typeof function () {} // this is the check we want to use if library system exists or not
+"function"
+
+// if librarySystem is undefined - we know developer
+  //  is not using libSystem
+  if (/* librarySystem function exists */) {
+    // Handle librarySystem case.
+    librarySystem('sandwichLibrary', function() {
+      return sandwichLibrary;
+    });    
+  } else {
+    // Handle window case.
+    window.sandwichLibrary = sandwichLibrary;
+  }
+****************************** solution ****
+
+  (function() {
+  // step 1: copy what is common about both
+  var breads = {
+    wheat: 'The healthy option',
+    white: 'The unhealthy option'
+  };
+
+  var fillings = {
+    turkey: 'For less fat sandwiches',
+    hummus: 'For Greeks'
+  };
+
+  var sandwichLibrary = {
+    breads: breads,
+    fillings: fillings
+  };
+
+  // if librarySystem is undefined - we know developer
+  //  is not using libSystem
+  if (typeof librarySystem !== 'undefined') {
+    // Handle librarySystem case.
+    librarySystem('sandwichLibrary', function() {
+      return sandwichLibrary;
+    });    
+  } else {
+    // Handle window case.
+    window.sandwichLibrary = sandwichLibrary;
+  }
+
+})();
+
+# let's run through debugger
+
+(function() {
+  // step 1: copy what is common about both
+  var breads = {
+    wheat: 'The healthy option',
+    white: 'The unhealthy option'
+  };
+
+  var fillings = {
+    turkey: 'For less fat sandwiches',
+    hummus: 'For Greeks'
+  };
+
+  var sandwichLibrary = {
+    breads: breads,
+    fillings: fillings
+  };
+
+  debugger;
+  
+  // if librarySystem is undefined - we know developer
+  //  is not using libSystem
+  if (typeof librarySystem !== 'undefined') {
+    // Handle librarySystem case.
+    librarySystem('sandwichLibrary', function() {
+      return sandwichLibrary;
+    });    
+  } else {
+    // Handle window case.
+    window.sandwichLibrary = sandwichLibrary;
+  }
+
+})();

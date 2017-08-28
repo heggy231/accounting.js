@@ -25,7 +25,7 @@ console.log(librarySystem('sandwichLibrary'));
 // 1. Create: librarySystem('libraryName', function() { /* return library */ });
 // 2. Use: librarySystem('libraryName');
 
-// librarySystem:
+// final librarySystem:
 // (function(){
   
 //   var libraryStorage = {};
