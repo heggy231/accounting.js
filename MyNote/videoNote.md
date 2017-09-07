@@ -858,7 +858,7 @@ typeof function () {} // this is the check we want to use if library system exis
   };
 
   debugger;
-  
+
   // if librarySystem is undefined - we know developer
   //  is not using libSystem
   if (typeof librarySystem !== 'undefined') {
@@ -872,3 +872,445 @@ typeof function () {} // this is the check we want to use if library system exis
   }
 
 })();
+
+- Connect the DOT: back to AccJS code
+This method of dynamically loading library (often times called modules which is more general term than library) is shown on line 379.
+
+library: third party wrote a library
+module: general that you could have written or any person could have written to avoid creating global variable conflict.
+
+https://github.com/gordonmzhu/accounting.js
+
+
+
+
+## Video 7: AccountingJS 7: noConflict
+
+This one talks about the .noConflict method that's in AccountingJS as well as many other libraries such as jQuery and Underscore.
+
+- Problem:
+
+// window.sandwichJS has an original value.
+window.sandwichLibrary = 'Library with books about sandwiches';
+
+// SandwichJS loads.
+(function() {
+  var breads = {
+    wheat: 'The healthy option',
+    white: 'The unhealthy option'
+  };
+
+  var fillings = {
+    turkey: 'For less fat sandwiches',
+    hummus: 'For Greeks'
+  };
+
+  var sandwichLibrary = {
+    breads: breads,
+    fillings: fillings
+  };
+
+  if (typeof librarySystem !== 'undefined') {
+    // Handle librarySystem case.
+    librarySystem('sandwichLibrary', function() {
+      return sandwichLibrary;
+    });    
+  } else {
+    // Handle window case.
+    
+    // this is the string sandwichLibrary
+    var oldSandwichLibrary = window.sandwichLibrary;
+
+    sandwichLibrary.noConflict = function() {
+      window.sandwichLibrary = oldSandwichLibrary;
+      return sandwichLibrary;
+    };
+ 
+    window.sandwichLibrary = sandwichLibrary;
+  }
+})();
+
+// Solution for problem of conflicting variable:
+//   This will reset windwo.sandwichLibrary to the original value.
+//   Refer back to orginal string.
+// .noConflict will also return the sandwichLibrary object.
+var sandwichJS = sandwichLibrary.noConflict(); // ref obj libSystem
+
+// You want to print window.sandwichLibrary (sandwichLibrary);
+console.log(sandwichLibrary)
+
+// We can still use SandwichJS.
+
+console.log(sandwichJS.breads.white);
+
+// output: 
+// Library with books about sandwiches
+// The unhealthy option
+
+Note: this library can handle different environements.
+If inside of environment where library system loader exist, it will load that way; Otherwise, library will load onto global window object.
+
+- some outside reading relating global variable conflicts:
+1) https://api.jquery.com/jquery.noconflict/
+   - lot of good examples to reflect on how to handle noConflict();
+2) https://github.com/jashkenas/underscore/blob/master/underscore.js
+
+   - ctr + f on the page to find noConflict, the you will see
+   
+  // Utility Functions
+  // -----------------
+
+  // Run Underscore.js in *noConflict* mode
+  // just like our example of sandwichLibrary.noConflict
+
+    sandwichLibrary.noConflict = function() {
+      window.sandwichLibrary = oldSandwichLibrary;
+      return sandwichLibrary;
+    };
+
+  // jQuery library runs in *noConflict* mode
+
+    _.noConflict = function() {
+      // root is window
+      root._ = previousUnderscore;
+      // this points to left of the dot of method it was called
+      // "_" << this
+      return this;
+    };
+
+# incase there is global variable conflict
+index.html of the accountingJS
+Add <script> tag at line 366.
+
+	<script> // Original value for window.accounting.
+	window.accounting = 'The original accounting.';
+  </script>
+
+Then in console run:
+accounting // accounting library; no string 'The original accounting.'
+// lets reset to run the original old string accounting
+var accountingLibrary = accounting.noConflict();
+// now call accounting to see original string accounting has restored
+accounting 
+
+- let's look at this in debugger
+first refresh the page,
+
+debugger;
+accounting.noConflict();
+// returns the accountingLib object
+
+- run debugger to see how the oldAccounting initially gets set
+
+	/* --- Module Definition --- */
+
+	// Export accounting for CommonJS. If being loaded as an AMD module, define it as such.
+	// Otherwise, just add `accounting` to the global object
+	if (typeof exports !== 'undefined') {
+		if (typeof module !== 'undefined' && module.exports) {
+			exports = module.exports = lib;
+		}
+		exports.accounting = lib;
+	} else if (typeof define === 'function' && define.amd) {
+		// Return the library as an AMD module:
+		define([], function() {
+			return lib;
+		});
+	} else {
+		debugger;
+		// Use accounting.noConflict to restore `accounting` back to its original value.
+		// Returns a reference to the library's `accounting` object;
+		// e.g. `var numbers = accounting.noConflict();`
+		lib.noConflict = (function(oldAccounting) {
+			return function() {
+				// Reset the value of the root's `accounting` variable:
+				root.accounting = oldAccounting;
+				// Delete the noConflict method:
+				lib.noConflict = undefined;
+				// Return reference to the library to re-assign it:
+				return lib;
+			};
+		})(root.accounting);
+
+- lib.noConflict
+lib.noConflict = undefined;
+// this resets it
+
+- refactor
+
+		lib.noConflict = (function(oldAccounting) {
+			return function() {
+				// Reset the value of the root's `accounting` variable:
+				root.accounting = oldAccounting;
+				// Delete the noConflict method:
+				lib.noConflict = undefined;
+				// Return reference to the library to re-assign it:
+				return lib;
+			};
+		})(root.accounting);
+
+*** refactor ****
+// My approach which is similar to underscore.
+		var oldAccounting = root.accounting; // root = window
+		lib.noConflict = function(){
+			root.accounting = oldAccounting;
+			return lib;
+		}
+
+
+- Last concept:
+Prototype: the original or **model on which something is based** or formed.
+
+https://docs.google.com/presentation/d/1GI_RWh13x1gFrbdr3aMuo0gmTV5nBVLeqNOfktYIfv4/edit?usp=sharing
+
+Diagram to visualize prototype 
+
+- 2 main methods you need for prototype
+
+// creating Object and sets the prototype of that object
+//  ex) we want to create myDog and set the prototype to be dog
+// 
+// 1) Object.create(dog);
+
+// from myDog object returns you the Prototype associated with myDog object from Dog object
+// 2) Object.getPrototypeOf(myDog);
+
+
+- let's try it out.
+
+var dog = {
+  fetch: function() {
+    console.log('fetch');
+  }
+};
+
+// create new object myDog and sets the prototype of that object to dog
+//  this step builds that connection btwn myDog's protype to dog obj
+var myDog = Object.create(dog);
+// set the unique data name in myDog
+myDog.name = 'Alexis';
+
+Next, let's create random dog
+
+// set prototype of randomDog to be dog
+// building the line / connector
+var randomDog = Object.create(dog);
+
+myDog.name and randomDog.name are already included in myDog and randomDog.
+However, note that we have not added fetch method to neither.
+
+try:
+myDog.fetch() // fetch
+randomDog.fetch() // fetch
+
+try 2nd method Object.getPrototypeOf():
+// this should be true since when we create myDog, randomDog
+//  then we set both equal to Object.create(dog) which sets prototypeOf each to dog method
+Object.getPrototypeOf(myDog) === dog // true
+Object.getPrototypeOf(randomDog) === dog // true 
+
+Note: // Whenever you use braces Javascript will
+//  automatically set the prototype of the object to
+//  the default object prototype.
+
+ex: 
+var dog = {
+  fetch: function() {
+    console.log('fetch');
+  }
+};
+
+- last layer of prototype
+
+1) upper layer: what you created link for the Object 
+2) last layer: prototype is null
+
+// create a empty object
+var normalObject = {};
+// first layer prototype methods which has default methods such as 
+//  has what you assigned and hasOwnProperty
+var defaultObjectPrototype = Object.getPrototypeOf(normalObject);
+
+
+ex) dog example:
+var dog = {
+  fetch: function() {
+    console.log('fetch');
+  }
+};
+
+var myDog = Object.create(dog);
+myDog.name = 'Sweetie';
+myDog.fetch() // fetch
+var defaultObjectPrototype = Object.getPrototypeOf(myDog); // assigned method dog, native prototype methods
+var secondLayerDefaultPrototype = Object.getPrototypeOf(defaultObjectPrototype); //just the prototype methods, no assigned method lives here
+var finalLayerDefaultPrototype = Object.getPrototypeOf(secondLayerDefaultPrototype); // final layer of prototype: null
+
+- Exception: only time you don't have the default Object Prototype.
+Note: typof null // "object"
+Object.create(null);
+var noPrototype = Object.create(null);
+Object.getPrototypeOf(noPrototype); // null
+
+** This is exceptional since normalObjects will return prototype methods.
+
+AccountingJS 9: Prototypes and constructors
+
+This one is about how JavaScript's prototype system works with constructor functions. You'll learn exactly what happens when you use new and how Function.prototype is automatically assigned to new objects.
+
+- Constructor functions' 4 unique standards:
+  1. Capitalize its Constructor function Name
+    ex) function Dog() {
+          // this is set to an empty object, {}
+          // this is returned
+        }
+
+  2. Use new keyword when creating new object off of constructor function
+
+  3. Constructors automatically set 'this' to a fresh new object.  These two lines are then
+     adding .name and .fetch to the new object.
+
+         ex)   var testDog = new Dog();
+          function Dog() {
+              // this is set to object, {}
+              this.name = name;
+              this.fetch = function () {};
+              // this is returned
+          }
+
+  4. Constructors automatically return the object at the end.  So this will return
+     a new object with .name and .fetch.
+
+        ex)   var testDog = new Dog();
+          function Dog() {
+              // this is set to object, {}
+              this.name = name;
+              this.fetch = function () {};
+              // this is returned
+          }
+
+          var myDog = new Dog('Alexis');
+          var randomDog = new Dog('Hey');
+
+# How do you create new testDog object using constructor function Dog?  Use name happyDog
+
+    function Dog(name) {
+      // this is set to an empty object, {}
+      this.name = name;
+      // this is returned
+    }
+
+    var testDog = new Dog('happy dog');
+    testDog // Dog {name: "happy dog"}
+
+
+Diagram about constructor slide 8:
+https://docs.google.com/presentation/d/1GI_RWh13x1gFrbdr3aMuo0gmTV5nBVLeqNOfktYIfv4/edit#slide=id.g24819be26f_0_7 
+
+- What is the prototype of myDog and randomDog now?
+Object.prototypeOf(myDog)
+// constructor prototype, native prototype methods
+Dog.prototype becomes prototype for every dog that is created by dog constructor.
+
+- What is then Object.getPrototypeOf(Dog.prototype)?
+Default.prototype that every object gets after getting created by Dog constructor function.
+
+- Constructor function prototype diagram breakdown analysis:
+1) redundancy of having fetch method repeated in both myDog, randomDog (will fix this)
+2) The middle layer Object is Dog.prototype which inclues 2 properties (methods).  1) constructor method, 2) fetch method  (unique feature for constructor function)
+3) Without constructor we have to create prototype object using Object.create(dog);  However, with constructor prototype link is done automatically for us by Dog constructor function.
+
+Logic behind why Dog.prototype get created once new object is created by constructor function:
+- So that myDog’s constructor function is Dog.
+
+Diagram demonstrated in console:
+  function Dog (name) {
+	this.name = name;
+}
+
+// add fetch to Dog.prototype object
+Dog.prototype.fetch = function() {
+	console.log('fetch inside of Dog.prototype');
+};
+
+var myDog = new Dog('Alexis');
+var randomDog = new Dog('Hey');
+
+myDog // myDog {name: "Alexis"} Note there is no fetch directly under myDog
+myDog.fetch() // fetch inside of Dog.prototype
+
+Prove that myDog is linked to Dog.prototype object as its prototype:
+Object.getPrototypeOf(myDog) === Dog.prototype // true
+
+Object.getPrototypeOf(myDog);
+// output: 
+{fetch: ƒ, constructor: ƒ}
+ fetch: ƒ ()
+ constructor: ƒ Dog(name)
+ __proto__: Object
+
+Dog.prototype is also
+// output: 
+{fetch: ƒ, constructor: ƒ}
+ fetch: ƒ ()
+ constructor: ƒ Dog(name)
+ __proto__: Object
+
+* from slide 12, https://docs.google.com/presentation/d/1GI_RWh13x1gFrbdr3aMuo0gmTV5nBVLeqNOfktYIfv4/edit#slide=id.g25f6a4f8fb_1_25
+
+- default object prototype ⇒  Object.prototype
+  The reason for name update.  
+  Try console, Object // ƒ Object( ) { [native code] }
+  Every time you create Object, Javascript is creating its default Object.prototype
+  Just as new Dog(‘Alexis’) gets Dog.prototype
+
+*** Prove this point.
+in Console: 
+> var myObject = new Object();  // you don't do this usu. just demonstration purpose
+> myObject // {} > _proto_
+> Object.getPrototypeOf(myObject) === Object.prototype // true
+
+
+Note: A word about creating array,
+  [ ] ==> new Array()
+
+  Each array you constructed will have default for array prototype methods that javascript
+already prescribed.  Array.prototype.someMethod() like .forEach()
+
+*** Summarize prototype lesson:
+  * Capitalize constructors
+  * Don’t forget ‘new’
+  * Using prototypes makes it easier to distinguish between unique vs. shared properties.
+      Prototypes brings in more communication value; not to mention eliminates redundancy.  People may read your code and think each method in object ex fetch is unique characteristic about that object.
+
+  * Array.prototype.forEach()
+      - Note about Array.prototype.forEach()
+      * Array is a constructor which gets the Array.prototype as its prototype.  On prototype's method is .forEach().  Javascript wants all array to share .forEach() method accross all arrays by putting it on prototype object.  Same way we wanted to share fetch method by putting it on Dog constructor prototype object.
+
+      [] // with new array
+
+      // but in background
+      new Array() // using Array constructor
+
+      // same as
+      {} new Object // using Object constructor
+      // no .forEach method
+
+      // However, if you call its prototype property on normalArray
+      //  Then prototype object has .forEach() method on it.
+      Object.getPrototypeOf(normalArray)
+
+      var constructorArray = new Array();
+      constructorArray // no forEach method.
+
+      Array methods are on constructor's prototype property.
+      > Object.getPrototypeOf(constructorArray) // now you can see forEach Method on it.
+  * __proto__
+
+> var newObject = {};
+> newObject // it has __proto__ property, it is way to inspect what prototype an object is linked to.
+
+
+
+
+

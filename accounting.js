@@ -391,6 +391,7 @@
 			return lib;
 		});
 	} else {
+		debugger;
 		// Use accounting.noConflict to restore `accounting` back to its original value.
 		// Returns a reference to the library's `accounting` object;
 		// e.g. `var numbers = accounting.noConflict();`
@@ -404,6 +405,13 @@
 				return lib;
 			};
 		})(root.accounting);
+
+		// My approach which is similar to underscore.
+		// var oldAccounting = root.accounting; // root = window
+		// lib.noConflict = function(){
+		// 	root.accounting = oldAccounting;
+		// 	return lib;
+		// }
 
 
 		// root = window since this is the first argument of function(root, undefined)

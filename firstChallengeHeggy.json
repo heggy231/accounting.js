@@ -1,0 +1,46 @@
+{
+  "name": "Arithmetic",
+  "order": 1,
+  "challenges": [
+    {
+      "title": "Integers in the Real World",
+      "description": [
+        "There are many excellent examples of our every day encounter with integers.",
+        "For example, I enjoy hiking up the mountains.  Did you know that you can meet integers while hiking?",
+        "As you are hike up the mountain, you are traveling in <code>positive</code> direction of integer.",
+        "When you descend, you are going <code>negative</code> direction of integer.  Negative numbers are denoted with minus sign (<code> - </code>) infront of it.  For positive integers, there is no need to put plus sign (<code> + </code>) in front of it.",
+        "Let's take look at some examples of integers: <code> -2, -1, 0, 1, 2 </code>"  Note that integers are not fractions nor numbers with decimal points (ex of what is not integer: <code> [ frac{1}{2} ], 1.2 </code>",
+        "Here is your challenge:  When you are going down the stairs which direction are you traveling on integer?  Pick one: Negative or Postive?"
+      ],
+      "challengeSeed": [
+        "% Write your answer here",
+        ""
+      ],
+      "tests": [
+        "assert(negative)/g.test(expression), 'message: The please pick one: negative or positive.')"
+      ],
+      "solutions": [
+        "\\negative"
+      ]
+    },
+    {
+      "title": "Example challenge",
+      "description": [
+        "This is where we put the instructions for the challenge.",
+        "We can create new paragraphs by adding new strings to this array."
+      ],
+      "challengeSeed": [
+        "% This is what appears in the LaTeX editor (which is a CodeMirror-styled text area).",
+        "% You can add multiple lines of comments if necessary, and anything that follows a \"%\" will be interpreted as a comment.",
+        ""
+      ],
+      "tests": [
+        "assert(/(\\\\\\[.*\\\\\\]|\\$\\$.*\\$\\$)/g.test(expression), 'message: The first part of each test is an assert statement that will run against the code the camper typed in.')",
+        "assert(/\\\\frac(\\s*{.*}\\s*{.*}|\\s*(\\d|\\w)\\s*(\\d|\\w))/g.test(expression), 'message: Anything following the \"message:\" will be the message associated with a test.')"
+      ],
+      "solutions": [
+        "% This solution is used purely for automated testing. It ensures that the following test will indeed get all the code to pass. \\[ \\frac{1}{2} \\]"
+      ]
+    }
+  ]
+}
