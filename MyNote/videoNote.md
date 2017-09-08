@@ -1310,7 +1310,296 @@ already prescribed.  Array.prototype.someMethod() like .forEach()
 > var newObject = {};
 > newObject // it has __proto__ property, it is way to inspect what prototype an object is linked to.
 
+## Accounting JS 10: isString, !!, and String.prototype
+https://watchandcode.com/courses/77710/lectures/2001287
+
+We start by looking over the codebase briefly to see how everything is organized and then carefully look at one of the internal helper methods, isString. You'll learn about some weird stuff like !!, understand unnecessarily complicated logic statements, and see why primitive string values can access methods on String.prototype.
+
+- start with /* --- Internal Helper Methods --- */
+1) 	function isString(obj) {
+		return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
+	}
+
+Let's break down !!. 
+! takes opposite of what value comes after it
+!true // false
+// Turns what is inside of ( ) into corresponding boolean value null corrspd. false
+!(null) // !(false) ==> true
+
+// results corresponding boolean value of null
+!!(null) // false !!(false) ==> !(true) ==> false
+
+// results corresponding boolean value of whatever inside
+!!(obj === '' || (obj && obj.charCodeAt && obj.substr))
+
+- way to convert the value to boolean
+Boolean(null)
+Boolean(null) === !!(null) // same way of convert to boolean, true
+
+- Note: Boolean function is more clear way to code than
+
+	function isString(obj) {
+		return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
+	}
+
+- (obj === '' || (obj && obj.charCodeAt && obj.substr)) AVOID writing code such as this
+  Let's look at this code to understand.  Note there are 2 parts to this code.
+
+  Part1) obj === ''
+    OR
+  Part2) (obj && obj.charCodeAt && obj.substr) 
+    Note: we are using && twice, checking 3 tests that pass
+      1stTest) obj val = null, undefined (false) but if it is a string, then it will pass.
+      2ndTest) obj.charCodeAt & obj.substr are availabe in string.
+                therefore, only pass when obj is string
+                Note: var obj = null;
+                // null corrsp boolean value false expect first test to fail
+                > obj && obj.charCodeAt && obj.substr 
+                // output: null
+                We rely on !! to give us the corresponding boolean value
+
+- Interesting short circuiting characteristic of Javascript:
+var obj = ''; //empty string
+obj && obj.charCodeAt && obj.substr // you may expect it will give you false
+However it gives " " which means it stops evaluating once it finds false value.
+
+var obj = 'heggy'; // case where obj string test should pass
+(obj && obj.charCodeAt && obj.substr) // expect to be true, output is different.
+Surprising finding: it returns the last value evaluated which is obj.substr not true or false.
+Therefore, double bang operator is important here.
+!!(obj.substr) // true
+
+Why do we explictly test empty string?  (obj === '' || (obj && obj.charCodeAt && obj.substr))
+  because !!(obj && obj.charCodeAt && obj.substr) will be false if obj is empty string.
+  Therefore, if it is empty string; return true
+
+- How does primitive string can have obj.charCodeAt methods like this?
+var primitiveString = 'heggy';
+primitiveString.substr()
+
+// when you call .substr on stringJavaScript is creating object version of primitve string.
+//  var objectString = new String('heggy'); // uses String constructor, which is object version of
+//   primitive string and runs this code.  objectString.substr();  It gets value from objectString.substr();
+//   once the value is returned then throws value away
+// It creates object version of the string so you can run code as primitiveString.substr()
+
+primitiveString.substr(), javascript creates following to accomodate .substr method to primitive string
+var objectString = new String('heggy'); // uses String constructor (which is object version of primitive string)
+// then it runs
+objectString.substr(); // once value is returned, it gets trashed.
+// summary: It creates object version of the string so you can run code as primitiveString.substr()
+
+######## Proving its point. Add typeof method to prototype:
+String.prototype.whatTypeAmI = function() {
+	return typeof this; 
+}
+
+// myString.whatTypeAmI(); this is left of dot, this = myString
+typeof primitiveString
+"string"
+
+primitiveString.whatTypeAmI()
+"object"
+/ as you see methods attached to age but theyare not on
+/ primitive number type but borrowed from object version of this number
+
+How does primitive number 50 gets methods?
+var age = 50;
+age.toFixed()
+/ as you see methods attached to age but theyare not on
+/ primitive number type but borrowed from object version of this number
 
 
+## Fall-back case for Array.isArray() is unusual.
+Note toString reference.
 
+- Store reference to possibly-available ECMAScript 5 methods for later
+	var nativeMap = Array.prototype.map,
+	  nativeIsArray = Array.isArray,
+		toString = Object.prototype.toString;
 
+	function isArray(obj) {
+		return nativeIsArray ? nativeIsArray(obj) : toString.call(obj) === '[object Array]';
+	}
+
+- Array.isArray([]) // returns T/F in native JavaScript 
+- Odd things.  toString = Object.prototype.toString
+   - why do we use Object.prototype.toString when we could use Array.prototype.toString?
+   Array.toString() only shows you the content of what is passed in.
+  [1,2,3].toString() //shows you what is inside of array "1,2,3"
+
+Solution to decipher what type of object it is: Object.prototype.toString:
+// Array.prototype.toString() is not use to show you what type of data type it is.  Just the content.
+// Now, Object.prototype.toString is useful for deciphering whether something is Array or not.
+
+var myObject = {};
+myObject.toString();
+//  Since myObject is {}object it has the prototype method for Object.prototype.toString
+//   which tells us the dataType of object whether array or object
+//  Also note: this key word inside .toString will point to myObject (left of the dot rule)
+//   Therefore, if you like to use 'this' to somethingelse; then change it to another value which
+//   we can use call method.
+
+Object.prototype.toString.call([])  // it allows me to call this function and set .toString to whatever you want
+// let's set this to empty array
+>> output: "[object Array]"
+
+## now let's read this isArray function
+function isArray(obj) {
+		return nativeIsArray ? nativeIsArray(obj) : toString.call(obj) === '[object Array]';
+	}
+
+if native IsArray exist; nativeIsArray(obj) ==> predefined: Array.isArray(obj) ==> output: T/F
+else toString.call(obj) === '[object Array]'
+      toString = Object.prototype.toString.isArray(obj)
+      1) Borrow Object.prototype.toString method to check the type. Now we need set this to argument 
+          we pass in.
+      2) Use .call(obj) which sets 'this' to 'obj' that we pass inside of argument 
+      Lastly, compare the result of Object.prototype.toString.isArray.call(obj) equals to '[object Array]'
+  output: true if IsArray(obj) is array.
+
+- To review what Object.prototype.toString.isArray(obj) is doing:
+var myObject = {};
+myObject.toString([]);
+>> output: "[object Object]"  this is pointing to myObject not [ ] argument we want to test.
+Therefore, we use object.prototype.call()
+
+myObject.toString.call([]);
+"[object Array]"
+
+Object.prototype.toString.call() 
+>> add Object.call() on Object.toString() will tells us the type of argument and sets 'this' to argument passed inside of .call( [ ] ) which is Object type Array.
+
+### 2. Internal Helper Methods:
+  function isObject(obj) {
+      return obj && toString.call(obj) === '[object Object]';
+  }
+
+- BreakDown: 
+Object.prototype.toString.call({}); // output "[object Object]"
+checks if parameter passed in is indeed obj in isObject(obj)
+
+** After you load up, accounting.js file on console try calling the function you created
+- toString.call({ }) === '[object Object]'; // true
+- toString.call({ name: 'heggy' }) === '[object Object]'; // true
+- toString.call([ ]) === '[object Object]'; // false
+
+*** fixing a bug on isObject function
+- Note: when passing in null isObject(null); // output: null
+How to fix this bug?  wrap it around Boolean.
+
+before: function isObject(obj) {
+		return obj && toString.call(obj) === '[object Object]';
+	}
+
+after: function isObject(obj) {
+		return Boolean(obj && toString.call(obj) === '[object Object]');
+	}
+
+Test it out: isObject(null); // output: false
+
+3) next function walk through
+	function defaults(object, defs) {
+		var key;
+		object = object || {};
+		defs = defs || {};
+		// Iterate over object non-prototype properties:
+		for (key in defs) {
+			if (defs.hasOwnProperty(key)) {
+				// Replace values with defaults only if undefined (allow empty/zero values):
+				if (object[key] == null) object[key] = defs[key];
+			}
+		}
+		return object;
+	}
+
+- Copy the function into console, to play around with it to learn its input/output value of this
+ defaults(object, defs) function
+1st) set a defaultCar (second argument: defs)
+
+** Factory setting of defaultCar.
+  var defaultCar = {
+  wheels: 4,
+  tires: 'standard',
+  color: 'grey'
+  };
+
+** As a customer of a car, I want just regular default options
+**  but I want to customize color to be 'blue'
+  var heggyCar = {
+  color: 'blue',
+  };
+
+** Remember to follow this format defaults(object, defs)
+// defaults(object, defs)
+// objects (heggyCar) = options you care customize such as color of the car
+// default options (defaultCar) = Factory setting of defaultCar.
+
+defaults(heggyCar, defaultCar); // all is default except for heggyCar customization
+// output: {color: "blue", wheels: 4, tires: "standard"}
+            color : "blue"
+            tires : "standard"
+            wheels : 4
+
+# let's now look function line by line now we understand its usecase:
+
+function defaults(object, def) {
+  // checking to see its corresponding boolean value
+  //  if they are true then leave it alone
+
+  object = object || {}; 
+}
+
+- In console to play with object = object || {}:
+  var object = {heggy: 'student'};
+  object = object || {}; // output: {heggy: 'student'}
+  // Keeps the original value since it has a truthy value
+  //  however, if you set object as falsy value then it is set to {}
+!!0 // false
+object = object || {}; // output: {} since object is falsy therefore, return {} 
+
+- next let's go thru extending object with a default object,
+first we remodel our car example object.
+
+var defaultCar = {
+  color: 'red',
+  wheels: 4
+};
+var myCar = {
+  color: 'blue'
+};
+
+/* our code from accounting.js*/
+function defaults(object, defs) {
+		var key;
+		object = object || {};
+		defs = defs || {};
+		/* Iterate over object non-prototype properties:*/
+		for (key in defs) {
+			if (defs.hasOwnProperty(key)) {
+				/* Replace values with defaults only if undefined (allow empty/zero values):*/
+				if (object[key] == null) object[key] = defs[key];
+			}
+		}
+		return object;
+}
+
+defaults(myCar, defaultCar);
+/* {color: "blue", wheels: 4} */
+
+*** Read along line by line:  Using defaultCar and myCar example from above.
+function defaults(object, defs) {
+  /* loop thru each key inside of defaultCar object */
+  /* ex: loop thru defaultCar's color, wheels properties */
+  for(key in defs){
+    /* this .hasOwnProperty we will come back to it */
+    if(def.hasOwnProperty(key)) {
+      /* if myCar (object) doesn't have certain property ==> use value from default property */
+      /*  reiterate: if default key in object doesn't exist (if null); */
+      /*  then assign myCar with missing defaultCar's key name */
+      /*  lastly, pair with value from defaultCar's key name inside of myCar's object */
+      /* ex) myCar doesn't have wheels property, therefore, it will add wheels key value pair from defaultCar*/
+      if(object[key] == null) object[key] = defs[key];
+    }
+  }
+}

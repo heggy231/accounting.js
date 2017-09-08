@@ -54,20 +54,28 @@
 	 * from underscore.js
 	 */
 	function isString(obj) {
+		// force ( what is inside ) result as corresponding boolean value
+		// obj.charCodeAt & obj.substr are availabe methods in string and proves obj is string.
+		// explicitly say empty string should pass isString test
 		return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
 	}
 
 	/**
-	 * Tests whether supplied parameter is a string
+	 * Tests whether supplied parameter is an array (fixed type is a string to an array)
 	 * from underscore.js, delegates to ECMA5's native Array.isArray
 	 */
+
+	// native javascript method on Array Array.isArray([]) in console, result: T/F
+	// nativeIsArray is defined above under Store reference section. 
+
 	function isArray(obj) {
 		return nativeIsArray ? nativeIsArray(obj) : toString.call(obj) === '[object Array]';
 	}
 
 	/**
-	 * Tests whether supplied parameter is a true object
+	 * Tests whether supplied parameter is a true object (true object as not array but {object})
 	 */
+	// toString = Object.prototype.toString; Object.prototype.toString.call(obj)
 	function isObject(obj) {
 		return obj && toString.call(obj) === '[object Object]';
 	}
