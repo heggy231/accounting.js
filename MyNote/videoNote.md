@@ -1456,7 +1456,7 @@ else toString.call(obj) === '[object Array]'
           we pass in.
       2) Use .call(obj) which sets 'this' to 'obj' that we pass inside of argument 
       Lastly, compare the result of Object.prototype.toString.isArray.call(obj) equals to '[object Array]'
-  output: true if IsArray(obj) is array.
+  output: true if .isArray(obj) is array.
 
 - To review what Object.prototype.toString.isArray(obj) is doing:
 var myObject = {};
@@ -1468,7 +1468,7 @@ myObject.toString.call([]);
 "[object Array]"
 
 Object.prototype.toString.call() 
->> add Object.call() on Object.toString() will tells us the type of argument and sets 'this' to argument passed inside of .call( [ ] ) which is Object type Array.
+>> add Object.call() on Object.toString() will tells us the type of argument and sets 'this' to argument passed inside of .call([]) which is Object type Array.
 
 ### 2. Internal Helper Methods:
   function isObject(obj) {
@@ -1591,7 +1591,7 @@ defaults(myCar, defaultCar);
 function defaults(object, defs) {
   /* loop thru each key inside of defaultCar object */
   /* ex: loop thru defaultCar's color, wheels properties */
-  for(key in defs){
+  for(var key in defs){
     /* this .hasOwnProperty we will come back to it */
     if(def.hasOwnProperty(key)) {
       /* if myCar (object) doesn't have certain property ==> use value from default property */
@@ -1602,4 +1602,133 @@ function defaults(object, defs) {
       if(object[key] == null) object[key] = defs[key];
     }
   }
+  return object;
 }
+
+*** focus on object.hasOwnProperty() part:
+function defaults(object, defs) {
+  for(var key in defs){
+    /* why do we need .hasOwnProperty? */
+    if(def.hasOwnProperty(key)) {
+      if(object[key] == null) object[key] = defs[key];
+    }
+  }
+  return object;
+}
+
+- why do we need .hasOwnProperty?
+first, create prototype function dog.
+> var dog = {
+    bark : function () {console.log('bark);}
+  };
+
+Then, set myDog Object and link it to dog prototype method
+> var myDog = Object.create(dog); /* this links dog as prototype of myDog */
+/* myDog will now inherite method from dog */
+> myDog.name = 'Heggy';    /* create a property on myDog */
+
+Now, we want to only print out what properties are directly on myDog object.
+** Problem: for-in loop outputs prototype linked method from dog object also.
+> for (var property in myDog) {
+    console.log(property);
+  }
+// name, bark
+
+It also lists myDog's object prorotype along with property which is dierctly on myDog.
+** Solution: object.hasOwnProperty(property) resolves this issue.
+for (var property in myDog) {
+  /* If stmt that checks if myDog hasOwnProperty
+   to filter out its prototype property*/
+  if(myDog.hasOwnProperty(property)){
+    console.log(property);
+  }
+}
+
+// name 
+
+## bug fix: object[key] == null code objective: Replace values with defaults(defs) only if undefined (allows empty/zero values):
+However, this requrement breake; if object[key] = null; 
+
+Step 1: enter defaults() function in console>
+
+function defaults(object, defs) {
+		var key;
+		object = object || {};
+		defs = defs || {};
+		/* Iterate over object non-prototype properties: */
+		for (key in defs) {
+			if (defs.hasOwnProperty(key)) {
+				/* Replace values with defaults only if undefined (allow empty/zero values): */
+				if (object[key] == null) object[key] = defs[key];
+			}
+		}
+		return object;
+}
+
+- phase 1: 
+defaults(object, defs)
+defaults({}, {})
+
+- phase 2: define object inside of argument
+defaults({color: null}, {color: 'grey', wheels: 4});
+// I expect first object value as null.  null means I have not yet decided.
+
+** fix the code to be triple equals, equate it to undefine, update the oneliner to formal if stmt
+before:
+if (object[key] == null) object[key] = defs[key];
+
+after:
+- triple equal, replace one liner into regular if statement
+if (object[key] === undefined) {
+  object[key] = defs[key];
+}
+
+- final:
+
+function defaults(object, defs) {
+		var key;
+		object = object || {};
+		defs = defs || {};
+		/* Iterate over object non-prototype properties: */
+		for (key in defs) {
+			if (defs.hasOwnProperty(key)) {
+				/* Replace values with defaults only if undefined (allow empty/zero values): */
+				if (object[key] === undefined) {
+          object[key] = defs[key];
+        }
+			}
+		}
+		return object;
+}
+
+- testing final code with null to see if it extend object into default setting.
+defaults({color: null}, {color: 'grey', wheels: 4});
+/* {color: null, wheels: 4} */
+
+
+## 3 parts of standard format when code commenting:
+1) Explanatory paragraph that provides context.
+2) Parameters: (description of parameters that function expects)
+3) Returns: (what gets returned at the end)
+
+	/**
+	 * *********** Before: **************
+	 * Parses a format string or object and returns format obj for use in rendering
+	 * 
+	 * `format` is either a string with the default (positive) format, or object
+	 * containing `pos` (required), `neg` and `zero` values (or a function returning
+	 * either a string or object)
+	 *
+	 * Either string or format.pos must contain "%v" (value) to be valid
+	 * 
+	 * ************* After: ****************
+	 * Explanatory paragraph that provides context.
+	 * 
+	 * Parameters: (description of parameters that function expects)
+	 * string     has "default positive format", must contain "%v"
+	 * object     has 'pos' (required, must contain "%v"), 'neg', 'zero' properties
+	 * function   returns a string or object like above
+	 * 
+	 * Returns: (what gets returned at the end)
+	 * object
+	 */

@@ -28,6 +28,7 @@
 		currency: {
 			symbol : "$",		// default currency symbol is '$'
 			format : "%s%v",	// controls output: %s = symbol, %v = value (can be object, see docs)
+												/* $10 => "%s%v", 10USD => "%v%s", 10 USD => "%v %s" */
 			decimal : ".",		// decimal point separator
 			thousand : ",",		// thousands separator
 			precision : 2,		// decimal places
@@ -87,12 +88,19 @@
 	 */
 	function defaults(object, defs) {
 		var key;
+		// Truthy/Falsy checking object/defs are true then keep it
+		//  otherwise make it {}
 		object = object || {};
 		defs = defs || {};
 		// Iterate over object non-prototype properties:
+		//  loop thru each key in defs obj
 		for (key in defs) {
+			// check only property directly assigned to defs
+			//  if we didn't use .hasOwnProperty(key), it'll include the prototype methods
 			if (defs.hasOwnProperty(key)) {
 				// Replace values with defaults only if undefined (allow empty/zero values):
+				//  if any property(key) is missing (null) in object compare to defs key will be assgined
+ 				//  with defs value.  There is a problem with this code which I fixed with === undefined.
 				if (object[key] == null) object[key] = defs[key];
 			}
 		}
@@ -106,14 +114,32 @@
 	 * Defers to native Array.map if available
 	 */
 	function map(obj, iterator, context) {
+		/* sets results as [] and declares i, j*/
 		var results = [], i, j;
 
 		if (!obj) return results;
 
-		// Use native .map method if it exists:
+		// Use native .map method if it exists and obj has map method on it
+		/* iterator callback, context is optional this
+		   nativeMap = Array.prototype.map;
+		*/
 		if (nativeMap && obj.map === nativeMap) return obj.map(iterator, context);
 
 		// Fallback for native .map:
+		/* If native .map doesn't exist */
+		/* From TDD we create map function; see the similarity 
+		    function map (origialArray, callback, optionalThis) {
+					var mapCallback = callback;
+
+					if (optionalThis) {
+						mapCallback = callback.bind(optionalThis);
+					}
+
+					for (var i = 0; i < originalArray.length; i++) {
+						mapCallback(originalArray[i], i, originalArray);
+					}
+				}
+		*/
 		for (i = 0, j = obj.length; i < j; i++ ) {
 			results[i] = iterator.call(context, obj[i], i, obj);
 		}
@@ -123,22 +149,49 @@
 	/**
 	 * Check and normalise the value of precision (must be positive integer)
 	 */
+	/* checkPrecision checks for valid number of decimal point, Precision is num decimal point
+	    in your currency.  base is default value; if val is not valid then it will revert to base
+	*/
 	function checkPrecision(val, base) {
+		/* num of decimal has to be positve number
+			  absoluteValue(val) and must be integer (no 1/2 of decimal) 
+			 Math.round() in case user inputs decimal.
+			*/
 		val = Math.round(Math.abs(val));
+		/* isNotANumber(val) returns true => throw val away; return base 
+		    else val isANumber =>
+		*/
 		return isNaN(val)? base : val;
 	}
 
 
 	/**
+	 * *********** Before: **************
 	 * Parses a format string or object and returns format obj for use in rendering
-	 *
+	 * 
 	 * `format` is either a string with the default (positive) format, or object
 	 * containing `pos` (required), `neg` and `zero` values (or a function returning
 	 * either a string or object)
 	 *
 	 * Either string or format.pos must contain "%v" (value) to be valid
+	 * 
+	 * ************* After: ****************
+	 * Explanatory paragraph that provides context.
+	 * 
+	 * Parameters: (description of parameters that function expects)
+	 * string     has "default positive format", must contain "%v"
+	 * object     has 'pos' (required, must contain "%v"), 'neg', 'zero' properties
+	 * function   returns a string or object like above
+	 * 
+	 * Returns: (what gets returned at the end)
+	 * object
+	 */
+	/* lib.settings.currency.format: "%s%v" 
+	 *  controls output format: %s = symbol, %v = value (can be object, see docs)
+	 *   ex) $10 => "%s%v" which is default value
 	 */
 	function checkCurrencyFormat(format) {
+		/* Default value => "%s%v" to start. */
 		var defaults = lib.settings.currency.format;
 
 		// Allow function as format parameter (should return string or object):
