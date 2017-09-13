@@ -1746,6 +1746,6 @@ if format string contains value => return true
 if format string has "-" then replace it with blank
 
 ## Bug found:
-format.replace()
+format.replace("-")
 
 
