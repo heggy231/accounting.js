@@ -191,6 +191,15 @@
 	 *  controls output format: %s = symbol, %v = value (can be object, see docs)
 	 *   ex) $10 => "%s%v" which is default value
 	 */
+
+	 // Scenarios (input/outcome):
+	 // A: Valid string    ==> convert string("%s%v") to a format object ({pos/neg/zero : format})
+	 // B: Invalid string  ==> use default and turn it to an obj if it's not already
+	 // C: Valid object    ==> leave the object alone
+	 // D: Invalid object  ==> use default and turn it to an obj if it's not already
+	 // E: Function        ==> Depends on what the function returns
+	 // F: Nothing         ==> use default and turn it to an obj if it's not already
+	 //  Note: 6 unique inputs but only 4 unique outcomes
 	function checkCurrencyFormat(format) {
 		/* Default value => "%s%v" to start. */
 		var defaults = lib.settings.currency.format;  
@@ -223,6 +232,13 @@
 		} else if ( !format || !format.pos || !format.pos.match("%v") ) {
 
 			// If defaults is a string, casts it to an object for faster checking next time:
+			//  return default object
+			// If defaults NOT string ==> return defaults (lib.settings.currency.format = "%s%v")
+			// If default is string; lib.settings.currency.format set to object {}.
+			// lib.settings.currency.format initially string but here we have it return it as obj {}
+			//  second time we run it and we have to return defaults object again,
+			//    !isString( defaults ) is true default was set to obj first time.
+			//    we can return object immediately; instead of creating new object
 			return ( !isString( defaults ) ) ? defaults : lib.settings.currency.format = {
 				pos : defaults,
 				neg : defaults.replace("%v", "-%v"),
@@ -231,6 +247,7 @@
 
 		}
 		// Otherwise, assume format was fine:
+		// if not a string; format is object >> return format
 		return format;
 	}
 

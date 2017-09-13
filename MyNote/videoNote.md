@@ -1745,7 +1745,29 @@ if format string contains value => return true
 ## format.replace("-", "")
 if format string has "-" then replace it with blank
 
-## Bug found:
-format.replace("-")
+## Bug found checkCurrencyFormat(format):
+neg : format.replace("-", "").replace("%v", "-%v)
+
+case that want to have -- as a separator
+   format.replace("-", "")
+   /* it will errorenously replace separtor dash (-)*/
+   .replace("%v", "-%v)
+   /* now it will result to double negative infront of %v*/
+'%s -- %v' ==> '%s - %v' ==> '%s - -%v'
+
+## why bother formating negative numbers?
+neg : format.replace("-", "").replace("%v", "-%v")
+
+financial statement: negative numbers may show as this:
+  (39,000.00) not -39,000.00
+      (%v)
 
 
+- Scenarios (input/outcome):
+	 A: Valid string    ==> convert string("%s%v") to a format object ({pos/neg/zero : format})
+	 B: Invalid string  ==> use default and turn it to an obj if it's not already
+	 C: Valid object    ==> leave the object alone
+	 D: Invalid object  ==> use default and turn it to an obj if it's not already
+	 E: Function        ==> Depends on what the function returns
+	 F: Nothing         ==> use default and turn it to an obj if it's not already
+Note: 6 unique inputs but only 4 unique outcomes
