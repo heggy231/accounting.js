@@ -1705,13 +1705,18 @@ function defaults(object, defs) {
 defaults({color: null}, {color: 'grey', wheels: 4});
 /* {color: null, wheels: 4} */
 
+******** AccountingJS 12: checkCurrencyFormat: ********
+
+- checkCurrencyFormat is the last internal helper method and also gives us a good starting point to see how currency formatting works. 
+
+Topic: string methods .match and .replace, how to structure comments, and how you can use scenario analysis to better understand code.
 
 ## 3 parts of standard format when code commenting:
 1) Explanatory paragraph that provides context.
 2) Parameters: (description of parameters that function expects)
 3) Returns: (what gets returned at the end)
 
-	/**
+	<!-- /**
 	 * *********** Before: **************
 	 * Parses a format string or object and returns format obj for use in rendering
 	 * 
@@ -1731,4 +1736,16 @@ defaults({color: null}, {color: 'grey', wheels: 4});
 	 * 
 	 * Returns: (what gets returned at the end)
 	 * object
-	 */
+	 */ -->
+
+
+## boolean(format.match("%v"))
+if format string contains value => return true
+
+## format.replace("-", "")
+if format string has "-" then replace it with blank
+
+## Bug found:
+format.replace()
+
+

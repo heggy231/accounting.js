@@ -184,7 +184,8 @@
 	 * function   returns a string or object like above
 	 * 
 	 * Returns: (what gets returned at the end)
-	 * object
+	 * object     has 'pos' (required, must contain "%v"), 'neg', 'zero' properties
+	 *             this requirement is shown in checkCurrencyFormat(format)
 	 */
 	/* lib.settings.currency.format: "%s%v" 
 	 *  controls output format: %s = symbol, %v = value (can be object, see docs)
@@ -192,19 +193,30 @@
 	 */
 	function checkCurrencyFormat(format) {
 		/* Default value => "%s%v" to start. */
-		var defaults = lib.settings.currency.format;
+		var defaults = lib.settings.currency.format;  
 
 		// Allow function as format parameter (should return string or object):
+		//  if format is function that run it as format.
 		if ( typeof format === "function" ) format = format();
 
 		// Format can be a string, in which case `value` ("%v") must be present:
+		// 'heggy'.match('h') ==> ['h']
+		// 'heggy'.match('a') ==> null
+		// Does format string contain '%v' ('value') in it? if format matches %v => true
+		//  corresponding boolean value for null is false
+
+		// argument passed in (format) isString and contains %v
 		if ( isString( format ) && format.match("%v") ) {
 
 			// Create and return positive, negative and zero formats:
+			// function has to return an object
 			return {
-				pos : format,
+				// positive and zero numbers will have same format
+				pos : format, /* positive */
+				// first .replace("-", ""): '%s - %v' ==> '%s %v' if val already has neg sign replace delete to avoid double negative sign in case '%s - -%v' happen
+				// second .replace("%v", "-%v"): find %v replace with -%v
 				neg : format.replace("-", "").replace("%v", "-%v"),
-				zero : format
+				zero : format /* zero to have different format dash (-) or no value */
 			};
 
 		// If no format, or object is missing valid positive value, use defaults:
