@@ -114,7 +114,10 @@
 	 * Defers to native Array.map if available
 	 */
 	function map(obj, iterator, context) {
-		/* sets results as [] and declares i, j*/
+		/* var results = [];
+		 * var i;
+		 * var j;
+		 */
 		var results = [], i, j;
 
 		if (!obj) return results;
@@ -253,6 +256,7 @@
 
 
 	/* --- API Methods --- */
+	/* API methods is for users of the accountingJS use */
 
 	/**
 	 * Takes a string/array of strings, removes all formatting/cruft and returns the raw float value
@@ -303,11 +307,24 @@
 	 * Fixes binary rounding issues (eg. (0.615).toFixed(2) === "0.61") that present
 	 * problems for accounting- and finance-related software.
 	 */
+	/* currency precision by (lib.settings = currency: {precision: 2} => 2 decimal places, */
+	/* number precision by (lib.settings = number: {precision: 0} since normal number doesn't need decimal places */
 	var toFixed = lib.toFixed = function(value, precision) {
+		/* if you provide precision it will be set as that; otherwise default number precision 0*/
 		precision = checkPrecision(precision, lib.settings.number.precision);
+		/* **** understand what power is doing *****
+		 * .615 * (10^2) ==> 61.5 ==> 62 ==> .62
+		 * power is base 10 with power of precision which is exponent (this ex: 2 exponent
+		 * 
+		 * 10^2 in javascript Math.pow(10, 2)
+		 */
 		var power = Math.pow(10, precision);
 
 		// Multiply up by precision, round accurately, then divide and use native toFixed():
+		//  lib.unformat(value) strip any formatting of value ex: currency, commas
+		//  power 100 (with precision = 2)
+		// First, multiply by power to make it a whole number then divide to the desired decimal place
+		// Last, turn number into string add format (adding 3rd decimal zero) using .toFixed()
 		return (Math.round(lib.unformat(value) * power) / power).toFixed(precision);
 	};
 

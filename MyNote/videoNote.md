@@ -1771,3 +1771,89 @@ financial statement: negative numbers may show as this:
 	 E: Function        ==> Depends on what the function returns
 	 F: Nothing         ==> use default and turn it to an obj if it's not already
 Note: 6 unique inputs but only 4 unique outcomes
+
+## Video AccountingJS 13: toFixed and rounding issues:
+Surprisingly, JavaScript doesn't provide a consistent way to round decimals. That's where AccountingJS's toFixed comes in. It's designed to work around the oddities of JavaScript. However, we quickly find that it's not perfect. Can we improve on AccountingJS and write something that works better?
+
+- Looking at number.prototype.toFixed(numOfDecimalPoints)
+
+10.265.toFixed(2) // 10.27 as expected round up
+10.235.toFixed(2) // 10.23 however unexpectedly doesn't round up
+10.225.toFixed(2) // 10.22 however unexpectedly doesn't round up
+10.215.toFixed(2) // 10.21 however unexpectedly doesn't round up
+
+**Conclusion: we can't rely on native method of .toFixed()
+
+-Learn why rounding is an issue in javascript, most computer languages is to look at how
+number is stored in computer memory.
+
+Demo link to understanding storing numbers:
+ - bartaz.github.io/ieee754-visualization/
+ try simple ones with whole number: 2 = 2^1
+ numbers are stored in powers of 2s
+
+ - Decimal points that can't be represented with powers of 2s;
+ ex) 0.615 => javaScript represents it nearlest number but bit smaller than 0.615.  
+ maybe 0.6149999999999999...
+
+- Strategy to fix this bug about rounding to 2 decimal places
+.615 * 100 // 61.5
+// .615 is not quite .615 but nearlest hundred will bring it to 61.5
+Math.round(61.5) // 62
+
+another ex) 10.235 * 100 (make it a whole upto 2 decimal points) , Math.round(1023.5) // 1024, 1024/100 = 10.24 
+  when 10.235.toFixed(2) => output: rounded down unexpectely 10.23 (wrong)
+
+# how does accounting.js use .toFixed() 
+var power = Math.pow(10, precision);
+return (Math.round(lib.unformat(value) * power) / power).toFixed(precision);
+
+.toFixed(precision) 
+- turns number into string
+- adds format such as adding 0 if 3rd decimal places were requested
+
+ex) 0.615 ==> 0.62 /* hack to round upto .62 (2 decimal places) */
+    0.615 * (10^2) ==> 61.5 ==> 62 * (10^-2) ==> .62
+
+.62.toFixed(3) /* 1) Turn number into 'string', 2) Add third decimal point holder
+                *  output: "0.620" 
+                */
+
+# However, there is still a problem:
+## Try following:
+- 1.005 // doesn't work.
+- Our current approach:  Round up at 2 decimal places: Expected result 1.005 => 1.01
+   - 1.005 * 100 ==> 100.5 /* in practice we get 100.49999999999999*/
+                 ==> Math.round(100.5); /* Math.round(100.49999999999999) => result 100*/
+      * Prob: Not quite .5 but when multiply 100, it transforms into 100.49999999999999 
+                 ==> Expected: 101 vs. Actual: 100
+
+
+# in practice: moving the decimal point to right fails.
+  - From 1.005 ==> 100.5 /* We want to move decimal points to the right 2 places */
+  - 1.005 * 100 ==> 100.49999999999999 in real life.
+
+## Solution to how safely move decimal points  without 
+- Turn number into string and safely move the decimal points to right 2 places.
+> '1.005' ==> '100.5"
+
+- Revert to number
+> Number('1.005') // output: 100.5
+Next, Math.round(100.5) // outpu: 101
+Finally, divide by 100 to get the 2 decimal places
+> 101/100 // output: 1.01
+
+- However, there is string manipulation and not recommended to go this route.
+
+- Better solution's shown: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/round
+   * Topic: Decimal rounding section in MDN
+     - Understanding scientific notation
+         1.005e2 // 1.005 * 10^2 ; scientific notation approach
+          e: multiply exponent base 10
+          2: exponent
+in console: 
+> 1.005e2  output: 100.5
+> 1.005 * 100 output: 100.49999999999999
+
+It is better to use scientific notation since you are getting the right number.
+- 
