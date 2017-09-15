@@ -1856,4 +1856,13 @@ in console:
 > 1.005 * 100 output: 100.49999999999999
 
 It is better to use scientific notation since you are getting the right number.
-- 
+A hack to moving decimal points to the right how many places you want.
+- If you want precision 2 decimal point for number 1.005
+Math.round(1.005e2)/100 // output: 1.01
+- Improvement:
+* Dividing by 100 -> make it more align with scientific notation
+Math.round(1.005e2);
+output: 101 <--we want to 
+101 + 'e-2' ==> "101e-2"
+Number("101e-2") ==> 1.01 (moves decimal to left 2 places
+                           keeps the number the same)

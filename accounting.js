@@ -328,6 +328,17 @@
 		return (Math.round(lib.unformat(value) * power) / power).toFixed(precision);
 	};
 
+	// More accurate toFixed funtion with scientific notation to express decimal point manipulation
+	function betterToFixed(value, precision) {
+		// model to work off from 1.005e2 (2 number of precision)
+		var exponentialForm = Number(value + 'e' + precision); /* Number ("1.005e2" string)*/
+		var rounded = Math.round(exponentialForm);
+		                  /* Number('101e-2') ==> first it's string -> convert to number */
+		var finalResult = Number(rounded + 'e-' + precision);
+		            /* Number.toFixed(noOfSignificance) is native method*/
+		return finalResult.toFixed(precision);
+	}
+
 
 	/**
 	 * Format a number, with comma-separated thousands and custom precision/decimal places
