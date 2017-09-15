@@ -1866,3 +1866,70 @@ output: 101 <--we want to
 101 + 'e-2' ==> "101e-2"
 Number("101e-2") ==> 1.01 (moves decimal to left 2 places
                            keeps the number the same)
+
+## Better toFixed() 
+Now, we will incorporate our hack to correctly rounding off number of scientific notation
+ exponential form toFixed().  Goal: 1) Returns string
+                                 2) Rounded to x significant digit.
+
+betterToFixed(1.005, 2);
+
+function betterToFixed (value, precision) {
+  /* model value: 1.005e2 */
+  var exponentialForm = Number(value + 'e' + precision); /* output: 100.5 */
+  var rounded = Math.round(exponentialForm); /* output: 101 */
+  /* model to code: 101e-2*/
+  var finalResult = Number(rounded + 'e-' + precision); /* output: 1.01 */
+  /* return string Rembmer .toFixed(specifyNoOfDecimalPoints) */
+  return finalResult.toFixed(precision);
+}
+
+- test functions:
+1) betterToFixed(1.005, 2); // expected output: 1.01 for 2 decimal places
+2) betterToFixed(.615, 2); // expected output: 0.62
+3) betterToFixed(10.235, 2); // expected output: 10.24
+
+
+- AccountingJS 14: formatMoney and style
+
+Topic: formatMoney. By this point, reading this code will be pretty easy because we already understand the internal helper methods that formatMoney depends on. In my review, I spend most of my time scrutinizing the style and thinking about how we can make the code easier to understand.
+ 
+- formatMoney() - format any number into currency
+usecases: accounting.formatMoney(12345678); // $12,345,678.00
+
+accounting.formatMoney(12345678); // $12,345,678.00  you can see the default symbol, thousand separator (,), decimal (.)
+accounting.formatMoney(5318008, { symbol: "GBP",  format: "%v %s" }); // 5,318,008.00 GBP
+// passing in as an object {} with key:value pair
+
+accounting.formatMoney(-500000, "£ ", 0); // customizing symbol ("£ ") and precision (0)
+"£ -500,000"
+
+- Let's try .formatMoney using object as 2nd argument
+
+* accounting.formatMoney(-500000, "£ ", 0); // customizing symbol ("£ ") and precision (0)
+"£ -500,000"
+**** rewrite it using object as second argument ***
+* accounting.formatMoney(-500000, { symbol: "£ ", precision: 0});
+"£ -500,000"
+
+- Go to Will recursively format an array of values: section of document
+Console demo:
+
+accounting.format([1, 1, 1, 1]) output: ["1", "1", "1", "1"]
+accounting.formatMoney([1, 1, 1, 1]) output: ["$1.00", "$1.00", "$1.00", "$1.00"] 
+                                             Note: This uses the default symbol, precision.
+
+* Observe .formatMoney arrays of array
+   array with 2 elements inside:
+accounting.formatMoney([[1, 1], [1, 1]]) 
+           output: 0: (2) ["$1.00", "$1.00"]
+                   1: (2) ["$1.00", "$1.00"] 
+
+* You can have array of array of array (this can go any numbers of arrays deep)
+accounting
+
+accounting.formatMoney([[1, 1], [1, 1, [2, 2]]]) output: [Array(2), Array(3)]
+
+- number = unformat(number);
+ex) accounting.formatMoney('1 USD') output: "$1.00" 
+unformat(number) extracts only number and correctly format with symbol and signifacant

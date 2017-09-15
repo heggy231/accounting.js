@@ -385,6 +385,7 @@
 	 * Format a number into currency
 	 *
 	 * Usage: accounting.formatMoney(number, symbol, precision, thousandsSep, decimalSep, format)
+	 * Following defaults from lib.settings{} top of the file
 	 * defaults: (0, "$", 2, ",", ".", "%s%v")
 	 *
 	 * Localise by overriding the symbol, precision, thousand / decimal separators and format
@@ -392,8 +393,12 @@
 	 *
 	 * To do: tidy up the parameters
 	 */
+
+	 /* attaching .formatMoney as a property of lib object which lib we provide to users
+	  *	 Therefore, this lib.formatMoney gives user access to .formatMoney
+	  */
 	var formatMoney = lib.formatMoney = function(number, symbol, precision, thousand, decimal, format) {
-		// Resursively format arrays:
+		// Recursively format arrays:
 		if (isArray(number)) {
 			return map(number, function(val){
 				return formatMoney(val, symbol, precision, thousand, decimal, format);
@@ -401,10 +406,21 @@
 		}
 
 		// Clean up number:
+		// strips out any extra characters in case you input string for value, extracts only number value
+		//  ex: accounting.formatMoney('1 USD') output: "$1.00"
 		number = unformat(number);
 
-		// Build options object from second param (if object) or all params, extending defaults:
+		// Build options object from second param (if object) or all params, extending defaults: 
+		//  extending defaults means overriding or customizing them
+		// defaults is part of internal helper method; exisiting default object lib.settings.currency
+		//  Lets you selectively override specific features by putting it right order of 
+		//   formatMondy(number, symbol, precision, thousand, decimal, format) or using object with prop specified 
+		//    ex {key:value}
+
 		var opts = defaults(
+			// Check second argmt symbol see if it is object; true => pass symbol as object overwrite defaults
+			//  otherwise, build customized object by grabbing values from your input and insert into the value part of obj
+			//  function(number, symbol, precision, thousand, decimal, format) => key : value (your input)
 				(isObject(symbol) ? symbol : {
 					symbol : symbol,
 					precision : precision,
@@ -412,6 +428,7 @@
 					decimal : decimal,
 					format : format
 				}),
+				// if you don't specify anything > leave it as default internal helper method
 				lib.settings.currency
 			),
 
