@@ -1933,3 +1933,351 @@ accounting.formatMoney([[1, 1], [1, 1, [2, 2]]]) output: [Array(2), Array(3)]
 - number = unformat(number);
 ex) accounting.formatMoney('1 USD') output: "$1.00" 
 unformat(number) extracts only number and correctly format with symbol and signifacant
+
+## Rewrite this convoluted ternary operator
+
+Before: 
+useFormat = number > 0 ? formats.pos : number < 0 ? formats.neg : formats.zero;
+
+After:
+
+// only declare var useFormat to assign to the appropriate value
+var useFormat;
+// number is positive
+if (number > 0) {
+  useFormat = formats.pos;
+// number is negative
+} else if () {
+  useFormat = formats.neg;
+// zero
+} else {
+  useFormat = formats.zero;
+}
+
+
+- Criticism on how they declared the variable
+
+var opts = defaults(
+		(isObject(symbol) ? symbol : {
+      symbol : symbol,
+      precision : precision,
+      thousand : thousand,
+      decimal : decimal,
+      format : format
+    }),
+		lib.settings.currency
+	),
+
+	formats = checkCurrencyFormat(opts.format),
+
+	useFormat = number > 0 ? formats.pos : number < 0 ? formats.neg : formats.zero;
+
+**** As overview simplified version ****
+var opts = defaults, formats, useFormat; // each are getting declared.
+
+
+*** Fix: To rewrite to make it more readable: ***
+
+var opts = defaults(
+		(isObject(symbol) ? symbol : {
+      symbol : symbol,
+      precision : precision,
+      thousand : thousand,
+      decimal : decimal,
+      format : format
+    }),
+		lib.settings.currency
+	);
+
+var formats = checkCurrencyFormat(opts.format);
+
+var useFormat = number > 0 ? formats.pos : number < 0 ? formats.neg : formats.zero;
+
+## Return statement of formatMoney() rewrite to make it more readable
+
+***Before***:
+
+return useFormat.replace('%s', opts.symbol)
+         .replace('%v', formatNumber(Math.abs(number), checkPrecision(opts.precision), opts.thousand, opts.decimal))
+
+***After***:
+
+var formattedNumber = formatNumber(
+  Math.abs(number), checkPrecision(opts.precision), opts.thousand, opts.decimal);
+
+var finalResult = useFormat
+  .replace('%s', opts.symbol)
+  .replace('%v', formattedNumber);
+
+return finalResult;
+
+## another note of criticizm:
+Issue with the way API design:
+ - Rarely, it is advisable to long list of argument a good idea.  
+ ex) formatNumber( Math.abs(number), checkPrecision(opts.precision), opts.thousand, opts.decimal );
+     Code is out of control due to so many arguments.
+ - Another downside of long argument- users gets confused on the order of arguments you are suppose to input:
+ ex) function(number, symbol, precision, thousand, decimal, format) 
+ However, there is symbol property where user may pass in the value
+ var opts = defaults(
+
+  (isObject(symbol) ? symbol : {
+    symbol : symbol,
+    precision : precision,
+    thousand : thousand,
+    decimal : decimal,
+    format : format
+  }
+
+  Currently lib.formatMoney let you express 2 different ways through argument or property key value.
+  - when designing library, try using single object to customize/specify the behavior of the function.
+  DO NOT accept a long list of arguments into function which adds complexity.  If you have a choice at the beginning
+   try the object approach vs. the laundry list of arguments approach.
+
+### AccountingJS 15: Recursion, what is it?
+
+AccountingJS uses recursion a lot, so we need to know it well to keep going. We start from the simplest of observations ("functions can see themselves") and then continue through three different example functions.
+
+Recursion note: https://docs.google.com/presentation/d/1GI_RWh13x1gFrbdr3aMuo0gmTV5nBVLeqNOfktYIfv4/edit?usp=sharing
+Observation 1) function can see themselves 
+Observation 2) Then function may call themselves
+
+definition recursion: function may call themselves
+
+ex) function recurse() {
+      recurse();
+    }
+    // causes stack overflow = Max call stack size exceeded
+
+To fix stack overflow, we need base case (function stops at some point; Does not call itself again)
+Key point: recursive function always must have base case.
+
+var counter = 0;
+
+function recurse()  {
+  /* Base case: */
+  if (counter === 1) {
+    return ‘done’;
+  /* Recursive case: */
+  } else {
+    counter++;
+    var result = recurse();
+    return result;
+  }
+}
+
+- Reading code: var counter is defined outside of recurse() function so it is not reset inside of recurse() function call.
+you get 2 recurse() function calls inside of stack first is var result = recurse() 
+Second is one returns 'done' under if (counter === 1).  second recurse pops off the stack, hand off 'done'
+to var result = done, then first recurse pops off the stack and hand off return result ('done')
+
+### most recursive function however is shown such as this
+
+var counter = 0; 
+function recurse() {
+  /* Base Case: */
+  if (counter === 1) {
+    return 'done';
+  /* Recursive Case: */
+  } else {
+    counter++;
+    return recurse();
+  }
+}
+
+## factorial
+Pattern of factorial: 
+4! = 4 * 3 * 2 * 1;
+3! =       3 * 2 * 1;
+2! =             2 * 1;
+1! =                   1;
+n! = n * (n - 1)!
+
+function factorial(n)  {
+  /* Base case: */
+  if (n === 1) {
+    return 1;
+  /* Recursive case: */
+  } else {
+    return n * factorial(n-1);
+  }
+}
+
+debugger;
+factorial(3);
+
+- /* taking notes while in debugger */
+3 * factorial(2)
+    2 * factorial(1)
+        1 /* return value of factorial(1) */
+    2 /* return value of factorial(2) */
+6 /* return value of factorial (3) */
+
+###Another ex of recursive function:
+Recursively unwrapping arrays
+
+function unwrapArray (data) {
+  /* Base case: */
+  if (!Array.isArray(data)) {
+    return data;
+  /* Recursive case: */
+  } else {
+    return unwrapArray(data[0]);
+  }
+}
+
+data = ['my data'];
+data[0]; /* data[0] is center, unwrapping 1 layer of array off */
+"my data"
+
+## AccountingJS 16: Recursing through the DOM ##
+
+- Here we go deeper into recursion to see how it can be used in different contexts. In the final example in this video, we build a nifty forEach-like function that recursively travels through the DOM and processes each element.
+
+Recursing through the DOM (video 16):
+Recursively checking links in a chain for quality control
+
+function chainIsGood(link) {
+  /* Base Case: Check if link cracked > stop*/
+  if (link.cracked) {
+    return false;
+  }
+
+  /* Recursive: Process next link.  */
+  if (link.next) {
+    return chainIsGood(link.next);
+
+  /* Base Case: If we reached the end, we’re good! > stop */
+  }  else {
+    return true;
+  }
+}
+
+***********************
+Data Structure of Chain
+var link1 = {
+  cracked: false,
+  next: link2  /* link2 not yet defined */
+};
+
+var link2 = {
+  cracked: false,
+  next: null // last chain no more chain after link2
+};
+
+// Switch order since link2 is not yet defined when referred in link1
+
+var link2 = {
+  cracked: false,
+  next: null // last chain no more chain after link2
+};
+
+var link1 = {
+  cracked: false,
+  next: link2
+};
+
+-   // Process next link.  This is the recursive part
+    // it will run the next link and return whatever value it returns
+  if (link.next) {
+    return chainIsGood(link.next);
+
+The usefulness of recursion: Great for unknown layers of depth
+ex) chainIsGood(link), unwrapArray(data)
+
+- From chainIsGood(link): you can have more than one base case
+   if it is cracked and when you hit the end.
+
+- Another good example that recursion is applied
+create file: index.html
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <p>some content</p>
+  </body>
+</html>
+
+open in console, to create function to work with this file.
+
+1) draw an outline:
+// given any element, print out given element and all the element' children
+// In our index.html file if given  <body> => <body>, <p>
+function logEachChildElement(element) {
+  // 1. Log the current element.
+  console.log(element);
+​
+  // 2. If there are no child elements, then stop.
+​
+  // 3. If there are child elements, then repeat these same steps
+  //    for each child elements.
+}
+
+2) // given any element, print out given element and all the element' children
+// In our index.html file if given  <body> => <body>, <p>
+function logEachChildElement(element) {
+  // 1. Log the current element.
+  console.log(element);
+
+  // 2. Base case: If there are no child elements, then stop.
+  if (element.children.length === 0) {
+    // simple return; will stop the function
+    return;
+  }
+  // 3. Recursive case: If there are child elements, then repeat these same steps
+  //    for each child elements.
+  if (element.children.length > 0) {
+    for (var i = 0; i < element.children.length; i++) {
+      logEachChildElement(element.children[i]);
+	  
+    }
+  }
+}
+
+// to get the entire html to print out use .documentElement
+logEachChildElement(document.documentElement);
+ output: html, head, body, p
+
+logEachChildElement(document.body);
+ output: body, p
+
+Note: Why did we use forLoop to loop through document.body.children?
+
+var children = document.body.children;
+children 
+ output: proto type: HTMLCollection
+Therefore, any Array native function wouldn't work.
+
+ex) try testing
+Array.isArray(children)
+ output: false
+
+children.forEach
+ output: undefined
+
+Therefore, must use normal forLoop
+
+*** refactor the code ***
+
+function logEachChildElement(element) {
+  // 1. Log the current element.
+  console.log(element);
+
+  // 2. Base case: If there are no child elements, then stop.
+  if (element.children.length === 0) {
+    // simple return; will stop the function
+    return;
+  }
+  // Recursive case: If there are child elements, then repeat these same steps
+  //  for each child elements.
+  if (element.children.length > 0) {
+    for (var i = 0; i < element.children.length; i++) {
+      logEachChildElement(element.children[i]);
+    }
+  } else {
+  
+  }
+
+}
+
+

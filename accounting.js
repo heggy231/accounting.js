@@ -181,14 +181,14 @@
 	 * ************* After: ****************
 	 * Explanatory paragraph that provides context.
 	 * 
-	 * Parameters: (description of parameters that function expects)
-	 * string     has "default positive format", must contain "%v"
-	 * object     has 'pos' (required, must contain "%v"), 'neg', 'zero' properties
-	 * function   returns a string or object like above
+	 * Parameters: (description of parameters that function expects) format
+	 *  string     has "default positive format", must contain "%v"
+	 *  object     has 'pos' (required, must contain "%v"), 'neg', 'zero' properties
+	 *  function   returns a string or object like above
 	 * 
 	 * Returns: (what gets returned at the end)
-	 * object     has 'pos' (required, must contain "%v"), 'neg', 'zero' properties
-	 *             this requirement is shown in checkCurrencyFormat(format)
+	 *  object     has 'pos' (required, must contain "%v"), 'neg', 'zero' properties
+	 *              this requirement is shown in checkCurrencyFormat(format)
 	 */
 	/* lib.settings.currency.format: "%s%v" 
 	 *  controls output format: %s = symbol, %v = value (can be object, see docs)
@@ -203,6 +203,16 @@
 	 // E: Function        ==> Depends on what the function returns
 	 // F: Nothing         ==> use default and turn it to an obj if it's not already
 	 //  Note: 6 unique inputs but only 4 unique outcomes
+
+	/* *******  usecase: checkCurrencyFormat gets used in later par of the function. *********
+	 * Check format (returns object with pos, neg and zero):
+	 *  formats = checkCurrencyFormat(opts.format),
+	 *
+	 * Choose which format to use for this value:
+	 *  useFormat = number > 0 ? formats.pos : number < 0 ? formats.neg : formats.zero;
+	 * 
+	 */
+
 	function checkCurrencyFormat(format) {
 		/* Default value => "%s%v" to start. */
 		var defaults = lib.settings.currency.format;  
@@ -211,13 +221,14 @@
 		//  if format is function that run it as format.
 		if ( typeof format === "function" ) format = format();
 
-		// Format can be a string, in which case `value` ("%v") must be present:
+		// if format is string, in which case `value` ("%v") must be present:
 		// 'heggy'.match('h') ==> ['h']
 		// 'heggy'.match('a') ==> null
 		// Does format string contain '%v' ('value') in it? if format matches %v => true
 		//  corresponding boolean value for null is false
 
-		// argument passed in (format) isString and contains %v
+		// argument passed in (format) isString and contains %v value
+		// value must be present but symbol is optional
 		if ( isString( format ) && format.match("%v") ) {
 
 			// Create and return positive, negative and zero formats:
@@ -225,8 +236,11 @@
 			return {
 				// positive and zero numbers will have same format
 				pos : format, /* positive */
-				// first .replace("-", ""): '%s - %v' ==> '%s %v' if val already has neg sign replace delete to avoid double negative sign in case '%s - -%v' happen
-				// second .replace("%v", "-%v"): find %v replace with -%v
+				// First, .replace("-", ""): 
+				// if you have dash to start '%s - %v' ==> '%s %v' 
+				//  if val already has neg sign replace delete to avoid double negative sign in case '%s - -%v' happen
+				// Bug: it could be you want double dash, '%s -- %v' ==> '%s - %v' ==> '%s - -%v'
+				// Second,  .replace("%v", "-%v"): find %v replace with -%v
 				neg : format.replace("-", "").replace("%v", "-%v"),
 				zero : format /* zero to have different format dash (-) or no value */
 			};
@@ -408,6 +422,7 @@
 		// Clean up number:
 		// strips out any extra characters in case you input string for value, extracts only number value
 		//  ex: accounting.formatMoney('1 USD') output: "$1.00"
+		// Note: number is argument that has been passed in.
 		number = unformat(number);
 
 		// Build options object from second param (if object) or all params, extending defaults: 
@@ -417,6 +432,7 @@
 		//   formatMondy(number, symbol, precision, thousand, decimal, format) or using object with prop specified 
 		//    ex {key:value}
 
+    // var opts, formats, useFormat; are getting declare using 435 var.  this is bad form.
 		var opts = defaults(
 			// Check second argmt symbol see if it is object; true => pass symbol as object overwrite defaults
 			//  otherwise, build customized object by grabbing values from your input and insert into the value part of obj
@@ -430,16 +446,45 @@
 				}),
 				// if you don't specify anything > leave it as default internal helper method
 				lib.settings.currency
-			),
+		);
 
-			// Check format (returns object with pos, neg and zero):
-			formats = checkCurrencyFormat(opts.format),
+		// Check format (returns object with pos, neg and zero):
+		var formats = checkCurrencyFormat(opts.format);
 
-			// Choose which format to use for this value:
-			useFormat = number > 0 ? formats.pos : number < 0 ? formats.neg : formats.zero;
+
+ /* **** this is rewrite of convoluted terninary operator useFormat *****
+	*		var useFormat; // first declare with out giving a value
+	*   
+	*   if (number > 0) {
+	*     useFormat = formats.pos;
+	*   } else if (number < 0) {
+  *     useFormat = formats.neg;
+	*	  // number is zero
+	*   } else { 
+	* 	  useFormat = formats.zero;
+	*		}
+  */
+		// Choose which format to use for this value:
+		var useFormat = number > 0 ? formats.pos : number < 0 ? formats.neg : formats.zero;
+
+		/* ** better reading eventhough it is longer ***
+		 * var formattedNumber = formatNumber(
+		 *  Math.abs(number), checkPrecision(opts.precision), opts.thousand, opts.decimal);
+		 * 
+     * var finalResult = useFormat
+		 * 	.replace('%s', opts.symbol)
+		 * 	.replace('%v', formattedNumber);
+		 * 
+		 * return finalResult;
+     */
+
 
 		// Return with currency symbol added:
-		return useFormat.replace('%s', opts.symbol).replace('%v', formatNumber(Math.abs(number), checkPrecision(opts.precision), opts.thousand, opts.decimal));
+		//  .replace() returns mutated string each time, you can chain method calls together
+		return useFormat.replace('%s', opts.symbol)
+		                .replace('%v', formatNumber(Math.abs(number), checkPrecision(opts.precision), opts.thousand, opts.decimal));
+
+		
 	};
 
 
