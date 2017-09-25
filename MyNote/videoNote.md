@@ -1084,6 +1084,12 @@ var dog = {
   }
 };
 
+Note: Method on prototype is non-static; since you can't call fetch directly.
+You need to create another object and borrow its method.
+round() is a static method of Math, you always use it as Math.round(), rather than as a method of a Mathobject you created (Math has no constructor).
+
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/round
+
 // create new object myDog and sets the prototype of that object to dog
 //  this step builds that connection btwn myDog's protype to dog obj
 var myDog = Object.create(dog);
@@ -2040,6 +2046,22 @@ AccountingJS uses recursion a lot, so we need to know it well to keep going. We 
 
 Recursion note: https://docs.google.com/presentation/d/1GI_RWh13x1gFrbdr3aMuo0gmTV5nBVLeqNOfktYIfv4/edit?usp=sharing
 Observation 1) function can see themselves 
+  function recurse() {
+  console.log(recurse);
+  }
+  /* function can see themselves demonstrating when you run recurse()
+      function definition gets printed out
+  */
+
+  recurse();
+  /*
+   Output: 
+   ƒ recurse() {
+    console.log(recurse);
+   }
+   */
+  function can see themselves is not complicated but not obvious.
+
 Observation 2) Then function may call themselves
 
 definition recursion: function may call themselves
@@ -2048,10 +2070,22 @@ ex) function recurse() {
       recurse();
     }
     // causes stack overflow = Max call stack size exceeded
+    // function can see itself and call itself.  good example of function call itself
 
 To fix stack overflow, we need base case (function stops at some point; Does not call itself again)
 Key point: recursive function always must have base case.
 
+## NEW terms: Call Stack definition ##
+ - Call Stack: when you open debugger you see it on the right side column.
+   Call Stack stores functions that are running in the program,
+    * Everytime the function is called it is added to the stack
+    * When the function completes (done); function is removed from the stack. 
+ - Google chrome behavior:  When you enter some functions, it gets stored as anonymous function that is run when you      hit enter
+     ex) 
+        debugger;
+        recurse(); 
+
+        These two are stored both inside of anonymous function.
 var counter = 0;
 
 function recurse()  {
@@ -2061,7 +2095,7 @@ function recurse()  {
   /* Recursive case: */
   } else {
     counter++;
-    var result = recurse();
+    var result = recurse();  // recurse hands off its value to its caller
     return result;
   }
 }
@@ -2069,9 +2103,9 @@ function recurse()  {
 - Reading code: var counter is defined outside of recurse() function so it is not reset inside of recurse() function call.
 you get 2 recurse() function calls inside of stack first is var result = recurse() 
 Second is one returns 'done' under if (counter === 1).  second recurse pops off the stack, hand off 'done'
-to var result = done, then first recurse pops off the stack and hand off return result ('done')
+to var result = done, then first recurse pops off the stack and hand off return result ('done') where it was called last [var result = recurse();]
 
-### most recursive function however is shown such as this
+### most recursive function; however is written as this; Earlier var result and return result is to show the process more clearly
 
 var counter = 0; 
 function recurse() {
@@ -2081,6 +2115,10 @@ function recurse() {
   /* Recursive Case: */
   } else {
     counter++;
+    /*
+     * var result = recurse();
+     * return result;
+     */
     return recurse();
   }
 }
@@ -2113,14 +2151,31 @@ factorial(3);
     2 /* return value of factorial(2) */
 6 /* return value of factorial (3) */
 
+** play around with factorial function in debugger **
+debugger;
+factorial(4);
+
+4 * factorial(3)
+    3 * factorial(2)
+        2 * factorial(1)
+            1 /* return value of factorial(1) */
+        2 /* return value of factorial(2) */
+    6 /* return value of factorial(3) */
+24 /* return value of factorial(4) */
+
+Idea of popping off stack:  Stack (abstract data type)
+  - https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
+
 ###Another ex of recursive function:
 Recursively unwrapping arrays
 
 function unwrapArray (data) {
-  /* Base case: */
+  /* Base case: if data is not Array */
   if (!Array.isArray(data)) {
     return data;
-  /* Recursive case: */
+  /* Recursive case: unwrapArray will recursively call itself 
+      Give first item of Array (data[0]) 
+  */
   } else {
     return unwrapArray(data[0]);
   }
@@ -2130,6 +2185,14 @@ data = ['my data'];
 data[0]; /* data[0] is center, unwrapping 1 layer of array off */
 "my data"
 
+** try data = [['my data']]; **
+unwrapArray([['my data']]); // first, unwrap result = array with "my data" in it.
+
+given [["my data"]] data[0] => ["my data"]
+given ["my data"] data[0]   =>  "my data"
+previous function call ["my data"] returns "my data"
+previous function call [["my data"]] returns "my data"
+ 
 ## AccountingJS 16: Recursing through the DOM ##
 
 - Here we go deeper into recursion to see how it can be used in different contexts. In the final example in this video, we build a nifty forEach-like function that recursively travels through the DOM and processes each element.
@@ -2148,7 +2211,7 @@ function chainIsGood(link) {
     return chainIsGood(link.next);
 
   /* Base Case: If we reached the end, we’re good! > stop */
-  }  else {
+  } else {
     return true;
   }
 }
@@ -2165,7 +2228,7 @@ var link2 = {
   next: null // last chain no more chain after link2
 };
 
-// Switch order since link2 is not yet defined when referred in link1
+****** Refactor:  Switch order since link2 is not yet defined when referred in link1 ******
 
 var link2 = {
   cracked: false,
@@ -2188,6 +2251,16 @@ ex) chainIsGood(link), unwrapArray(data)
 - From chainIsGood(link): you can have more than one base case
    if it is cracked and when you hit the end.
 
+- Go through debugger;
+    /* simplest case */
+    debugger;
+    chainIsGood(link2);
+
+    Note that link2 = { cracked: false, next: null}
+                         not cracked,   No next link
+
+    if (link.next is null ) ==> it gets skipped over
+
 - Another good example that recursion is applied
 create file: index.html
 
@@ -2200,36 +2273,72 @@ create file: index.html
 
 open in console, to create function to work with this file.
 
-1) draw an outline:
-// given any element, print out given element and all the element' children
-// In our index.html file if given  <body> => <body>, <p>
+1) draw an outline of all the elements in your html file:
+// given any element, print out its element and all the child elements
+// In our index.html file if given  logEachChildElement(document.body) => body, p
+
 function logEachChildElement(element) {
-  // 1. Log the current element.
+  /* 1. Log the current element. */
   console.log(element);
 ​
-  // 2. If there are no child elements, then stop.
+  /* 2. If there are no child elements, then stop. */
 ​
-  // 3. If there are child elements, then repeat these same steps
-  //    for each child elements.
+  /* 3. If there are child elements, then repeat these same steps
+  *    for each child elements.*/
 }
 
-2) // given any element, print out given element and all the element' children
-// In our index.html file if given  <body> => <body>, <p>
+2) Given any html element, print out its element along with all of its child element.
+In our index.html file ex, logEachChildElement(document.body)  
+Expected output: <body>, <p>
+
+
+## Version 1) easy when looking through debugger to follow since
+  I included var result in 2nd if statement under the recursion case:
+
 function logEachChildElement(element) {
-  // 1. Log the current element.
+  /* 1. Log current element */
   console.log(element);
 
-  // 2. Base case: If there are no child elements, then stop.
+  /* 2. Base case: If there are no child elements, stop */
   if (element.children.length === 0) {
-    // simple return; will stop the function
+    /* simply ends this block of code */
     return;
   }
-  // 3. Recursive case: If there are child elements, then repeat these same steps
-  //    for each child elements.
+
+  /* 3. Recursive case: If children, repeat*/
+  if (element.children.length > 0) {
+    for (var i = 0; i < element.children.length; i++){
+      /* Start recursing thru each children which logs
+       *  its element at the beginning of the function call
+       */
+      var result = logEachChildElement(element.children[i]);
+      result;
+    }
+  }
+}
+
+**** Reading code ****
+- First, it console logs given element
+- Second, Base case checks if there are any children if none; function ends
+- Third, Recursive case: if children exists, go to ith element (element.children[i])
+- Fourth, set reult equal to the return value 
+
+
+
+function logEachChildElement(element) {
+  /* 1. Log the current element. */
+  console.log(element);
+
+  /* 2. Base case: If there are no child elements, then stop. */
+  if (element.children.length === 0) {
+    /* simple return; will stop the function */
+    return;
+  }
+  /* 3. Recursive case: If there are child elements,
+  then repeat these same steps for each child elements. */
   if (element.children.length > 0) {
     for (var i = 0; i < element.children.length; i++) {
       logEachChildElement(element.children[i]);
-	  
     }
   }
 }
@@ -2238,19 +2347,24 @@ function logEachChildElement(element) {
 logEachChildElement(document.documentElement);
  output: html, head, body, p
 
+// just the elements under body element
 logEachChildElement(document.body);
  output: body, p
+
 
 Note: Why did we use forLoop to loop through document.body.children?
 
 var children = document.body.children;
-children 
- output: proto type: HTMLCollection
+children /* children looks like array with index
+ *
+ * output: proto type: HTMLCollection
+ *  It is not array
+ */
 Therefore, any Array native function wouldn't work.
 
 ex) try testing
 Array.isArray(children)
- output: false
+ // output: false
 
 children.forEach
  output: undefined
@@ -2260,24 +2374,112 @@ Therefore, must use normal forLoop
 *** refactor the code ***
 
 function logEachChildElement(element) {
-  // 1. Log the current element.
+  /* 1. Log the current element. */
   console.log(element);
 
-  // 2. Base case: If there are no child elements, then stop.
-  if (element.children.length === 0) {
-    // simple return; will stop the function
-    return;
-  }
-  // Recursive case: If there are child elements, then repeat these same steps
-  //  for each child elements.
+  /* Recursive case: If there are child elements, then repeat these same steps
+  *  for each child elements. */
   if (element.children.length > 0) {
     for (var i = 0; i < element.children.length; i++) {
       logEachChildElement(element.children[i]);
     }
+  /* Base case: If there are no children  if (element.children.length === 0), stop */
   } else {
-  
+    return;
   }
-
 }
 
+*** refactor the code: just the last else return part ***
 
+function logEachChildElement(element) {
+  /* 1. Log the current element */
+  console.log(element);
+
+  /* 2. Recursive case: there are child elements, then repeat */
+  if (element.children.length > 0) {
+    for (var i = 0; i < element.children.length; i++) {
+      logEachChildElement(element.children[i]);
+    }  
+  }
+  /* 3. BaseCase: If there are no children, stop */
+}
+
+debugger;
+logEachChildElement(document.body);
+
+**** Next version logEachChildElement(element) is add callback
+to each element ***
+
+- Borrowing forEach function's adding callback to each element
+   - Need to do: re-watch forEach TDD maybe?
+
+function forEachChildElement(element, callback) {
+  /* 1. Run callback on the current element */
+  callback(element);
+
+  /* 2. Recursive case: there are child elements, then repeat */
+  if (element.children.length > 0) {
+    for (var i = 0; i < element.children.length; i++) {
+      forEachChildElement(element.children[i], callback);
+    }  
+  }
+  /* 3. BaseCase: If there are no children, stop */
+}
+
+forEachChildElement(document.body, function (element) {
+  console.log(element);
+});
+/* Same functionality but using callback to log each element */
+output:
+<body></body>
+<p></p>
+...
+<p></p>
+ Note: each element tag are printed when ask for document.body.children[i]
+
+
+- What if you want to console log node name (aka tag name)?
+In the DOM - each tag has property called nodeName
+
+forEachChildElement(document.body, function (element) {
+  console.log (element.nodeName);
+});
+
+output is string nodeName in capilized format:
+BODY
+P
+DIV
+OL
+LI
+P
+ Note: nodeName always capitalized. 
+ 
+
+##  AccountingJS 17: Recursively mapping arrays
+Final stage of recursion video series, we look at how at how AccountingJS recursively maps arrays of numbers into currencies. Since this is a complicated example of recursion, we go through a set of diagrams that help you to visualize what's happening at every step. We wrap up with some general observations on recursion and how you can get good at it over time.
+
+## first objective: Enter number return formatted number
+  Enter array of numbers, give me formatted array of number
+  given 1 => '$1'
+  given [1, 2, 3] => ['$1', '$2', '$3']
+
+function formatMoney (numbers) {
+  /* Check if numbers argument we passed-in is whether
+   *  isArray or not. */
+  if (Array.isArray(numbers)) {
+    /* Numbers is array which has array.map,
+     *  transforming number using its callback */
+  	return numbers.map(function(element) {
+      return '$' + element;
+    });
+  /* Otherwise, if single number */
+  } else {
+    return '$' + numbers;
+  }
+}
+
+- Try it out:
+formatMoney(1);
+output: $1
+
+formatMoney([1, 2, 3]);
