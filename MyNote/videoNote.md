@@ -2458,7 +2458,7 @@ P
 ##  AccountingJS 17: Recursively mapping arrays
 Final stage of recursion video series, we look at how at how AccountingJS recursively maps arrays of numbers into currencies. Since this is a complicated example of recursion, we go through a set of diagrams that help you to visualize what's happening at every step. We wrap up with some general observations on recursion and how you can get good at it over time.
 
-## first objective: Enter number return formatted number
+## objective: take in any number return formatted to dollar value number
   Enter array of numbers, give me formatted array of number
   given 1 => '$1'
   given [1, 2, 3] => ['$1', '$2', '$3']
@@ -2483,3 +2483,47 @@ formatMoney(1);
 output: $1
 
 formatMoney([1, 2, 3]);
+- output: ["$1", "$2", "$3"]
+
+** Issue Note: However, we want to retain the structure integrity of input of nested array when outputs. **
+- Lets say we input following; but keep its structure as 
+   nested array and transformed into currency format of nested array.
+
+[ [1], [2], [3] ] ==> [ ['$1'], ['$2'], ['$3'] ]
+
+// However we are at 
+formatMoney( [ [1], [2], [3] ]) =>  our desired result: 
+["$1", "$2", "$3"]
+
+Why does this happen?
+When javascript tries to convert the array into string,
+ it will return just the inner element.
+
+ ex) '$' + [1] /* => our desired expected result '$[1]' */
+     Actual output => "$1"
+
+'$' + '1'
+"$1"
+
+'$' + [[[1]]]
+"$1"
+
+Basically, JS is calling .toString(); to convert array
+[[[1]]].toString(); 
+"1"
+
+Trouble: How can we respect the array's structure???
+
+function formatMoney(numbers) {  /* numbers = [[1]]*/
+
+  /* Recursive case. */
+  if (Array.isArray(numbers)) {  /* element = [1] */
+  	return numbers.map(function mapper (element) {
+      return formatMoney(element);
+    });
+
+  /* Base case. */
+  } else {
+    return '$' + numbers;
+  }
+}
