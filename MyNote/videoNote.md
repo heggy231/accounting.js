@@ -2463,6 +2463,8 @@ Final stage of recursion video series, we look at how at how AccountingJS recurs
   given 1 => '$1'
   given [1, 2, 3] => ['$1', '$2', '$3']
 
+- transforming every element in an array => return a new array
+
 function formatMoney (numbers) {
   /* Check if numbers argument we passed-in is whether
    *  isArray or not. */
@@ -2527,3 +2529,156 @@ function formatMoney(numbers) {  /* numbers = [[1]]*/
     return '$' + numbers;
   }
 }
+
+Write down each case in a scrape paper to understand its logic
+https://docs.google.com/presentation/d/1GI_RWh13x1gFrbdr3aMuo0gmTV5nBVLeqNOfktYIfv4/edit#slide=id.g277a0caa62_0_1
+
+slide 21)
+
+- formatMoney([1]);
+Note on the sheet of paper: 
+  - draw out what debugger will do before hand.  
+  - .map isnot going to on the callstack since it is native function (we can’t step into it)
+  - mapper(1) will go into the callstack.
+    Go thru  each step on our own, .map() will unwrap single array layer each time it is called..
+
+- next challenge
+  - formatMoney([[1]]);
+  note: first recursive call of formatMoney([1]) is same process as formatMoney([1])
+  if you are perceptive you may recognize this.  
+
+
+Last comment on recursion video series:
+- Observations about recursion:
+See the structure of recursion: ID base case and recursive case, recursive case needs to get closer to base case each time you call it.  
+
+- Steps to recursive mastery:
+Don’t expect to write map recursion right now.  
+Read a lot of code when you see recursion, write out each call stack and go through debugger.
+
+It really takes time to see a lot of things: to be able to know when you to use it and use it at the appropriate time.
+What you have accomplished- now you are familiar with recursion concept.
+
+Next challenge, go through map we built and pass in recursion map function.  This will help you learn better.
+
+Note: Recursion in account.formatMoney works the exactly the same way.
+
+- understand accounting.js formatMoney recursion.
+
+	var formatMoney = lib.formatMoney = function(number, symbol, precision, thousand, decimal, format) {
+		/* Recursively format arrays: */
+		if (isArray(number)) {
+			return map(number, function(val){
+				return formatMoney(val, symbol, precision, thousand, decimal, format);
+			});
+		}
+
+
+    /* Base case: if it is not array => format number as money */
+    number = unformat(number);
+
+    /* Build options object from second param (if object) or 
+    *   all param, extending defaults
+    */
+    var opts = defaults(
+      (isObject(symbol) ? symbol : {
+        symbol : symbol,
+        precision : precision,
+        thousand : thousand,
+        decimal : decimal,
+        format : format
+      }),
+      // if you don't specify anything > leave it as default internal helper method
+      lib.settings.currency
+		);
+
+
+### AccountingJS 18: Regular expressions p1 ###           
+Before we can continue, we need to learn about regular expressions. Regular expressions are a very powerful and concise way to search for patterns in strings. In this introduction, you'll see how regular expressions can be used to grade the strength of different passwords (I was inspired by an article titled "The World's worst password requirements list"). You'll (definitely) learn about regular expressions and (hopefully) will think about this video in the future when you need to come up with password requirements in your own apps.
+
+external reading "The World's worst password requirements list":
+https://kottke.org/12/06/the-worlds-worst-password-requirements-list
+
+1) First place you find regex: inside API methods lib
+/* --- API Methods --- */
+/* Build regex to strip out everything except digits, decimal point and minus sign: */
+var regex = new RegExp("[^0-9-" + decimal + "]", ["g"]),
+  unformatted = parseFloat(
+    ("" + value)
+    .replace(/\((.*)\)/, "-$1") /* replace bracketed values with negatives */
+    .replace(regex, '')         /* strip out any cruft */
+    .replace(decimal, '.')      /* make sure decimal point is standard */
+  );
+
+2) Second place of regex: Inside formatMoney
+
+var formatNumber = lib.formatNumber
+/* Format the number: */
+		return negative + (mod ? base.substr(0, mod) + opts.thousand : "") + base.substr(mod).replace(/(\d{3})(?=\d)/g, "$1" + opts.thousand) + (usePrecision ? opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1] : "");
+	};
+
+
+- Definitions of Regular Expressions (regex): A concise way to look for patterns in strings.
+
+Being Concise is both strength/weakness.  b/c its brevity, code may be very dense, cryptic, obscure (hard to understand).  However, because it is concise we can describe complicated string patterns in a short amount of code (adv less code)
+
+- approach of introducing regEx
+
+Grading Password (with regular expressions) 
+
+* Number of total characters
+* Number of lowercase letters
+* Number of uppercase letters
+* Number of numbers
+* Number of special characters
+* Number of “words” (consecutive letters)  -ex: azb many letters inbtwn
+
+
+/* regex: /pattern/ (always with forwrd slash) */
+
+// 'heggy'.match(/pattern/);
+// Ex: 'heggy'.match(/h/);
+
+'g'.match(/g/);
+output: ["g", index: 0, input: "g"]
+
+'h'.match(/r/);
+output: null
+
+'hh'.match(/h/);
+output: 'h', Note: By default it only returns the first match.
+
+// By default it only returns the first match.
+'gg'.match(/g/g); // g global flag which detects all the gs.
+(2) ["g", "g"]
+
+'hhhhhhhhhh'.match(/h/g);
+(10) ["h", "h", "h", "h", "h", "h", "h", "h", "h", "h"]
+Note: by adding g (global flag) which returns match that had all 'h's.
+
+'ag'.match(/a|g/g); // match any character that's 'a' OR 'g'
+
+Note: | (pipe) is or  a|g => a or g
+'ag'.match(/ag/g); // a follow by g
+output: ["ag"]
+
+'ag'.match(/a|b|c|d|e|f|g/g); // a or b or c or d... or g for g tag: for all cases
+output: ["a", "g"]
+
+'abcdefg'.match(/a|b|c|d|e|f|g/g);
+(7) ["a", "b", "c", "d", "e", "f", "g"]
+
+This is error prone approach since you have to consider many cases such as
+ capital letters, numbers, weird characters just in case..
+
+- a shortcut to get through all the special cases to match to come out right.
+'.' - special meta character in regex
+
+'abcdefg'.match(/./g);
+. is the solution that cuts through all the special cases.
+
+'abcdefgSDGHRYH123458***%  %##'.match(/./g);
+output: (29) ["a", "b", "c", "d", "e", "f", "g", "S", "D", "G", "H", "R", "Y", "H", "1", "2", "3", "4", "5", "8", "*", "*", "*", "%", " ", " ", "%", "#", "#"]
+note: regex very concise that matches any given character except return (line break)
+
+CheatSheet for regex: http://www.rexegg.com/regex-quickstart.html
