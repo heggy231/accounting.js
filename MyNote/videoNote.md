@@ -2596,7 +2596,11 @@ Note: Recursion in account.formatMoney works the exactly the same way.
 ### AccountingJS 18: Regular expressions p1 ###           
 Before we can continue, we need to learn about regular expressions. Regular expressions are a very powerful and concise way to search for patterns in strings. In this introduction, you'll see how regular expressions can be used to grade the strength of different passwords (I was inspired by an article titled "The World's worst password requirements list"). You'll (definitely) learn about regular expressions and (hopefully) will think about this video in the future when you need to come up with password requirements in your own apps.
 
-external reading "The World's worst password requirements list":
+Slides 43 regEx
+https://docs.google.com/presentation/d/1GI_RWh13x1gFrbdr3aMuo0gmTV5nBVLeqNOfktYIfv4/edit
+
+
+- External reading "The World's worst password requirements list":
 https://kottke.org/12/06/the-worlds-worst-password-requirements-list
 
 1) First place you find regex: inside API methods lib
@@ -2624,7 +2628,7 @@ Being Concise is both strength/weakness.  b/c its brevity, code may be very dens
 
 - approach of introducing regEx
 
-Grading Password (with regular expressions) 
+- Grading Password (with regular expressions) 
 
 * Number of total characters
 * Number of lowercase letters
@@ -2635,7 +2639,7 @@ Grading Password (with regular expressions)
 
 
 /* regex: /pattern/ (always with forwrd slash) */
-
+- pattern can vary widely. pattern is the hard part.
 // 'heggy'.match(/pattern/);
 // Ex: 'heggy'.match(/h/);
 
@@ -2644,6 +2648,12 @@ output: ["g", index: 0, input: "g"]
 
 'h'.match(/r/);
 output: null
+
+'heggy'.match(/ey/);
+output: null
+
+'heggy'.match(/gy/);
+output: ["gy", index: 3, input: "heggy"]
 
 'hh'.match(/h/);
 output: 'h', Note: By default it only returns the first match.
@@ -2662,23 +2672,162 @@ Note: | (pipe) is or  a|g => a or g
 'ag'.match(/ag/g); // a follow by g
 output: ["ag"]
 
+- when there is no pipe?
+'ih'.match(/ih/g); // When no pipe, i follow by h
+output: ["ih"] <<- no pipe is looking at entire sequence as single match
+
 'ag'.match(/a|b|c|d|e|f|g/g); // a or b or c or d... or g for g tag: for all cases
 output: ["a", "g"]
 
 'abcdefg'.match(/a|b|c|d|e|f|g/g);
 (7) ["a", "b", "c", "d", "e", "f", "g"]
 
-This is error prone approach since you have to consider many cases such as
- capital letters, numbers, weird characters just in case..
+This is error prone approach since you have to consider many cases such as 
+upper/lower case letters, numbers, weird characters just in case..
 
 - a shortcut to get through all the special cases to match to come out right.
 '.' - special meta character in regex
 
+- Definition: meta character: in regEx character that is a shortcut
+
+
 'abcdefg'.match(/./g);
-. is the solution that cuts through all the special cases.
+. is the solution that cuts through all the special cases of character matching. example of metacharacter.
 
 'abcdefgSDGHRYH123458***%  %##'.match(/./g);
 output: (29) ["a", "b", "c", "d", "e", "f", "g", "S", "D", "G", "H", "R", "Y", "H", "1", "2", "3", "4", "5", "8", "*", "*", "*", "%", " ", " ", "%", "#", "#"]
 note: regex very concise that matches any given character except return (line break)
 
 CheatSheet for regex: http://www.rexegg.com/regex-quickstart.html
+
+* Number of total characters?
+use the '.'
+
+'abcdefgSDGHRYH123458***%%##'.match(/./g);
+(27) ["a", "b", "c", "d", "e", "f", "g", "S", "D", "G", "H", "R", "Y", "H", "1", "2", "3", "4", "5", "8", "*", "*", "*", "%", "%", "#", "#"]
+
+. is type of metacharacter matches any single characters.
+
+- For good measure, add white spce in regex.
+'abcdefgABC123%!! #'.match(/./g);
+output: (18) ["a", "b", "c", "d", "e", "f", "g", "A", "B", "C", "1", "2", "3", "%", "!", "!", " ", "#"]
+
+## Table list of metacharacters
+https://www.hscripts.com/tutorials/regular-expression/metacharacter-list.php
+https://www.w3schools.com/jsref/jsref_obj_regexp.asp
+
+- Definition of metacharacter: A metacharacter is a character that has a special meaning (instead of a literal meaning) to a computer program, such as a shell interpreter or a regular expression engine
+
+Note: you can get to number of character in a given string by using:
+'abcdefgSDGHRYH123458***%%##'.match(/./g);  output: 27
+'abcdefgSDGHRYH123458***%%##'.length;  output: 27
+
+Prefer choice is .length here.  only use regex if it is easier than alt.
+Use sparingly only when you have to.
+
+'ag'.match(/ag/g); // a follow by g
+
+'abcdefgABC123%!! #'.match(/a/g); // literal match a
+output: ["a"]
+
+Something to mull over, Gordon explicitly stated that use RegEx only when it is the best approach, to get the length of a string.
+It is better if used string.length property to get the result.
+
+Use regEx only whe alternative is much worst since regex is cryptic for most therefore, only use only when you have to.
+
+#################################
+'abcdefgABC123%!! #'.length 
+vs 
+'abcdefgABC123%!! #'.match(/./g)
+
+Both ouput: 18
+##################################
+
+## Challenge 2: Number of lowercase letters using regEx:
+
+ex) only count lower cases 
+'abCD12%&' // ab count the only the lower case characters ==> result a, b
+
+'abCD12%&'.match(/a|b|c|d|e ....|z /g) // error prone not concise solution, too much work to type
+
+- how do you count only the lower case lettter?  set in reg ex.  
+[a-z] or [abcdefghijklmnopqrstuvwxyz]
+
+- 'abCD12%&'.match(/[ / *  members of the set * / ]/g); // anythin in the middle of []  will match
+
+'abCD12%&'.match(/[abcdefghijklmnopqrstuvwxyz]/g);
+
+// understanding character set [a-z] or [abcdefghijklmnopqrstuvwxyz]
+
+
+'abCD19ejlkdDDrrt'.match(/[abcdefghijklmnopqrstuvwxyz]/g);
+(10) ["a", "b", "e", "j", "l", "k", "d", "r", "r", "t"]
+
+- this set is bit simpler than or pipe, less typing
+
+'abCD%%&&@@19ejlkdDDrrt'.match(/[abcdefghijklmnopqrstuvwxyz]/g);
+(10) ["a", "b", "e", "j", "l", "k", "d", "r", "r", "t"]
+
+- use ranges '-' inside of set '[]': Note: Ranges only work in a set.
+'abCD%%&&@@19ejlkdDDrrt'.match(/[a-z]/g);
+(10) ["a", "b", "e", "j", "l", "k", "d", "r", "r", "t"]
+* Requirement 2: how do you count lower case chracters?
+
+#########################################
+
+- Challenge: how do you find the number of lower case character matches without the regEx?
+
+// loop through each character, check each character exists inside of set of all lowerCase.
+
+Given: var myPassword = 'abAB';
+
+var lowerCaseCharacters = {
+  a: true,
+  b: true,
+  c: true
+};
+
+var numberOfLowercaseCharacters = 0;
+
+for (var i = 0; i < myPassword.length; i++) {
+  var currentCharacter = myPassword[i]; /* then store all lower case letters as obj; check if each characters matches one of current lower case. */
+  if (lowercaseCharacters[currentCharacter]) {
+    numberOfLowercaseCharacters++;
+  }
+}
+
+console.log(numberOfLowercaseCharacters);
+// output: 2 
+
+vs.
+
+myPassword.match(/[a-z]/g);
+- This case RegEx is lot simpler.
+
+## todo: try coding this on my own
+
+// loop through each character, check each character
+var myPassword = 'abAB';
+
+myPassword.match(/[a-z]/g); // any lowercase letters matches for all cases (all the instances)
+(2) ["a", "b"]
+
+- Grading Password: 3rd requirement, Number of Uppercase letters
+
+'abAB'.match(/[A-Z]/g);
+- Output: (2) ["A", "B"]
+
+## Next challenge: Number of digits (ex 200: 3 digits, one number
+
+Intersperse the numbers through out to make it more interesting
+
+'1a3bAB3'.match(/[0-9]/g);
+- Output: (3) ["1", "3", "3"]
+
+- combine range inside of set
+'1a3bAB3'.match(/[0-9a-zA-Z]/g);
+(7) ["1", "a", "3", "b", "A", "B", "3"]
+
+
+
+
