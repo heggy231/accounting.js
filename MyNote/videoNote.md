@@ -2775,7 +2775,7 @@ ex) only count lower cases
 
 #########################################
 
-- Challenge: how do you find the number of lower case character matches without the regEx?
+- Challenge3: how do you find the number of lower case character matches without the regEx?
 
 // loop through each character, check each character exists inside of set of all lowerCase.
 
@@ -2817,9 +2817,9 @@ myPassword.match(/[a-z]/g); // any lowercase letters matches for all cases (all 
 'abAB'.match(/[A-Z]/g);
 - Output: (2) ["A", "B"]
 
-## Next challenge: Number of digits (ex 200: 3 digits, one number
+## Next challenge 4: Number of digits (ex 200: 3 digits, one number
 
-Intersperse the numbers through out to make it more interesting
+Intersperse (cool word!) the numbers through out to make it more interesting
 
 '1a3bAB3'.match(/[0-9]/g);
 - Output: (3) ["1", "3", "3"]
@@ -2828,6 +2828,297 @@ Intersperse the numbers through out to make it more interesting
 '1a3bAB3'.match(/[0-9a-zA-Z]/g);
 (7) ["1", "a", "3", "b", "A", "B", "3"]
 
+## Next challenge 5: No of special characters (means: Anything that’s not a letter or a digit use caret symbol inside of set /[^a-zA-A0-9]/g)
+
+var password = 'aZ1$$&**)(';
+
+password.match(/[^a-zA-Z0-9]/g);  // use the caret symbol to negate.
+
+output: (7) ["$", "$", "&", "*", "*", ")", "("]
+
+## Next Challenge 6: Number of “words” (consecutive letters)  -ex: azb many letters inbtwn, word meaning series of consecutive letters such as ex: have a good day or KIFH gdgliei also word
+
+'DONT!be*a^no-brainer'.match(/[a-zA-Z]/g);
+(16) ["D", "O", "N", "T", "b", "e", "a", "n", "o", "b", "r", "a", "i", "n", "e", "r"]
+- note: problem it is only matching single character but we want consecutive matches
+
+- Quantifier: consecutive matches in any length {1,20} one upto 20 characters
+'DONT!be*a^no-brainer'.match(/[a-zA-Z]{1,20}/g);
+(5) ["DONT", "be", "a", "no", "brainer"]
+
+- Quantifier with no upper bound limit {1,} just leave the second number
+'DONT!be*a^no-brainer'.match(/[a-zA-Z]{1,}/g); // match as many as you see
+(5) ["DONT", "be", "a", "no", "brainer"]
+
+- Shortcut1: Want to match one+ consecutive matches; there is a shortcut.  Leave {}
+just add +
+
+'DONT!be*a^no-brainer'.match(/[a-zA-Z]+/g); 
+(5) ["DONT", "be", "a", "no", "brainer"]
+
+- Shortcut2: /[a-zA-Z]+/g get all the upper/lower case add case insensitive flag 'i'
+'DONT!be*a^no-brainer'.match(/[a-z]+/gi); 
 
 
+## AccountingJS 19: Regular expression capture groups
 
+Topic1: String.prototype.replace with regular expressions. 
+Topic2: Using parentheses to save sub-patterns (called capture groups) 
+Topic3: Building a phone number obfuscator and name formatter. Along the way, you'll also learn about Regexr, a powerful online tool that helps you create regular expressions.
+#####
+
+Topic3: Phone number obfuscator (make it obscure)
+
+Ex: 555-666-7777 => XXX - XXX - 7777
+
+
+https://regexr.com/ <= helps visualize regex
+
+- To find any group of 3 consecutive numbers, use quantifier {3}
+'415-555-7780'.match(/[0-9]{3}/g);
+output: 415-555-778
+* Note: quantifier is looking for only 3 consecutive digits
+
+- To find any group of 3 consecutive numbers with hypen ('-'), use literal '-'
+'415-555-7780'.match(/[0-9]{3}-/g);
+
+- To find any group of x consecutive numbers with hypen ('-'), for entire phone number
+'415-555-7780'.match(/[0-9]{3}-[0-9]{3}-[0-9]{4}/g);
+output: 415-555-7780
+Note: now we have regex entirely matches phone number!
+
+- Shortcut: using metacharacter \d
+/\d{3}-\d{3}-\d{4}/g is same as /[0-9]{3}-[0-9]{3}-[0-9]{4}/g
+
+- Understanding .replace method, 
+'Info: 111-222-3333'.replace(/\d{3}-\d{3}-\d{4}/, 'phone number was here');
+* Note: looks at the pattern of phone number (first argmt), replace with phone number
+
+- How to refer to string portion that was matched by regex, $&
+'Info: 111-222-3333'.replace(/\d{3}-\d{3}-\d{4}/, 'phone number is ... $&');
+// $& represents the string that was matched by regex
+* Output: "Info: phone number is ... 111-222-3333"
+
+- Phone number obfuscator function:
+ * ex) 111-222-3333 => XXX-XXX-3333 (just the last 4 digits visible
+ 
+- Introduction to matched group idea: 
+
+// intro to matched group: ( *expression* ) which later can refer to
+'Info: 111-222-3333'.replace(/\d{3}-(\d{3})-(\d{4})/, 'phone number is ... $& $1 $2');
+// $& orginal string matched by regex expression
+// $1 refers to (\d{3})
+// $2 refers to (\d{4})
+* output: "Info: phone number is ... 111-222-3333 222 3333"
+
+- Getting close to XXX-XXX-3333 (just the last 4 digits visible
+'Info: 111-222-3333'.replace(/\d{3}-\d{3}-(\d{4})/, '$1');
+* output: "Info: 3333"
+
+- Final step to obfuscator adding XXX-XXX- to the replace 2nd argument.
+'Info: 111-222-3333'.replace(/\d{3}-\d{3}-(\d{4})/, 'XXX-XXX-$1');
+* output: "Info: XXX-XXX-3333"
+https://regexr.com/3gtce
+
+## Next challenge, format names so first, last
+
+- Formatting names from last first to first last:
+
+Castaneda, Heggy ⇒ Heggy Castaneda
+Hopper, Grace    ⇒ Grace Hopper
+Lovelace, Ada 
+Peanut, Snoopy
+
+'Castaneda, Heggy'.replace(/([a-z]{1,}), ([a-z]{1,})/ig, '$2 $1');
+* 1st argument expression: all letter quantifier 1 to no upper limit flag case insensitive, global, 
+  group1 last name, group2 first name
+* 2nd argument: replace with group2 spce group1
+** Output: "Heggy Castaneda"
+
+https://regexr.com/3gtck
+
+- refactoring expression to have meta character replace {1,} quantifier
+   with metaCharacter '+'
+
+/([a-z]+), ([a-z]+)/ig
+
+- Another usecase of regex: you can manipulate string in any text editor
+open a new text sheet
+add 
+cmd + f use .* (regex in find window)
+find: ([a-z]+), ([a-z]+)
+replace: $2 $1 
+press replaceAll
+
+this is very efficient way to process large amount of data and manipulate easily
+
+## AccountingJS 20: Lookaheads and backreferences
+https://watchandcode.com/courses/77710/lectures/2845380
+
+- Positive lookahead: Match a group after the main expression without including
+  it in the result.
+/w/
+match w only if 
+/w()/
+what follows
+/w(?=)/
+what comes next equal to
+/w(?=w)/
+what comes next equal to w
+
+/w(?=w)/ <== match w only if followed by w
+
+- ex) qqqq
+/q(?=q)/
+output: qqq
+Read: match q only if what follow is q
+In other words: the evey instance of q's except the last one as long as it's cosecutive
+
+
+https://regexr.com/3gtcq  this is example of postive lookahead
+
+- ex) match only q follow by u
+
+qqqqqqq
+queen
+quick
+qeel
+
+/q(?=u)/
+* output: queen, quick
+
+- ex) match only u follow by ee
+/u(?=ee)/
+
+/w(?=.w)
+'.' is any character.
+but what if you have ww it doesn't work since 
+current expression requires some character to be there.
+
+/w(?=.{0,}w)/g
+ww now works we say you can have zero or more character
+ in between w w.
+
+- shortcut for metacharacter zero or more {0,} = '*'
+remember {1,0} = '+'
+>> /w(?=.*w)/g same as /w(?=.{0,}w)/g
+- read: .* or .{0,} any character 0 or more
+
+- Note: () $1 for capture substring called capture group which we can use in .replace method $1 to match the first parenthesis $1.
+Normal parenthesis for capture group is not the same parenthesis with
+(?=)
+
+- negative look ahead: non matching to the expression
+>> /w(?!.*w)/g same as /w(?!.{0,}w)/g
+* opposite of (!) w that follow by 0 or more character and w; in other word, find the just the last w, w that has no w following on it.
+
+https://regexr.com/3gtju
+- output: last w of work. wow*  ww*
+
+- another ex of negativve lookahead
+
+! means not (negative)
+( *lookahead group always starts with? with () *)
+
+ex: super man
+>> super(?! man)
+
+super dog
+super market
+super mania
+
+>> /super(?! man)/g
+match super if it is NOT followed super
+
+output: super dog
+super market
+https://regexr.com/3gtka
+
+- contrast above with positive lookahead
+postive lookahead
+super(?= man)
+
+## Next challenge: last instance of different characters
+- Last instance of every letter (last j last o last g)
+>> aaaawwww
+simple example first we want last a and last w
+
+- capture group (*expression*)
+To refer to captured group inside of regex (in .replace we used $1)
+\1 (backslash instead).
+> /(w)(?!.*\1)/g is exactly same as 
+> /(w)(?!.*w)/g as having w
+* Reads: match w, which is wrapped in capture group ()
+* that does NOT follow by negative lookahead pattern:
+* following any number of (0 or more) character and w
+*  in short the last w.
+
+aaawww output: last w is highlighted
+
+- To capture last a or w use pipe inside of the capture group (a|w)
+> /(a|w)(?!.*\1)/g
+* Reads: match a or w if it is NOT followed by zero more char followed by a or w
+
+catch a or w if it is NOT followed by 0 or more char, followed by
+a or w
+
+- /(a|b|c|d|e|g)(?!.*\1)/g
+* Reads: match a,b,c,d,e,g if it is NOT followed by 0 or more char, any capture group 1 match
+aaabbbcccdddeeeggg  it will match last instance of a,b,c,d,e,g
+
+- let's make it more dynamic by match last instance of any char
+>> /(.)(?!.*\1)/g
+
+https://regexr.com/3gtkm
+if you hover over \1 ==> definition shows up for backreference
+
+* Definition: backreference = Matches last occurence of capture group X
+ex) /(.)(?!.*\1)/g  <<= here \1 is backreference
+
+- Backreference example: last occurence match
+/(r)\1/ same as /rr/ matches rr
+* READS: r back reference to r
+
+/(r)\1{2}/g - r follow by 2 r's
+output: rrr
+
+/(r)a\1{2}/g - ra followed by 2 r's
+output: rarr
+
+- example of all character except last instance
+(.)(?=.*\1)/g
+* Reads: match any char '.' that follow by any number of char '.*' and 1st capture group '\1'
+*  in short, match all char but not last instance of its character, single time displayed not included neither since it is not followed by itself.
+
+## why are we learning about negative lookahead?  Relating back to the password grading.
+
+>> /(.)(?!.*\1)/g
+result matches 4
+aaaaaaaaabbbbbbccccdddaaaaacccccc
+- this number matches 4 of unique letter
+   shows diversity of unique letters of pwd.
+   regEx is great for pwd grader.
+
+- coding >> /(.)(?!.*\1)/g in regular function is recommended
+
+function getUniqueCharacters(testString) {
+  var characterStorage = {};
+  characterStorage.uniqueCharacters = 0;
+
+  for (var i = 0; i < testString.length; i++) {
+    var currentCharacter = testString[i];
+
+    if (characterStorage[currentCharacter]) {
+      characterStorage[currentCharacter]++;
+    } else {
+      characterStorage[currentCharacter] = 1;
+      characterStorage.uniqueCharacters++;
+    }
+  }
+  
+  return characterStorage.uniqueCharacters;
+}
+
+
+getUniqueCharacters('aaabbb');
+{uniqueCharacters: 2, a: 3, b: 3}
