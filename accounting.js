@@ -361,6 +361,12 @@
 	 * Localise by overriding the precision and thousand / decimal separators
 	 * 2nd parameter `precision` can be an object matching `settings.number`
 	 */
+
+	// formatNumber related to formatMoney; formatNumber prop
+	//  on lib object (now can be used as method on lib obj)
+	// lib.format is just shortcut var; not recommended
+	// Just like formatMoney second param can be obj if not want to list
+  //  out in the order starting precision, thousand, decimal
 	var formatNumber = lib.formatNumber = lib.format = function(number, precision, thousand, decimal) {
 		// Resursively format arrays:
 		if (isArray(number)) {
@@ -370,9 +376,11 @@
 		}
 
 		// Clean up number:
+		// Clean up number: e.g. $1.99 ==> 1.99, (2.3) ==> -2.3
 		number = unformat(number);
 
 		// Build options object from second param (if object) or all params, extending defaults:
+		// if second param is obj then it will accept as obj in following
 		var opts = defaults(
 				(isObject(precision) ? precision : {
 					precision : precision,
@@ -382,16 +390,103 @@
 				lib.settings.number
 			),
 
-			// Clean up precision
+			// Clean up precision 
+			// Internal Helper method which checks for input being valid
 			usePrecision = checkPrecision(opts.precision),
 
 			// Do some calc:
+			// neg sign prefixing to the string, returned result look below 
+			//  read: if number less than 0, have neg sign otherwise, nothing
 			negative = number < 0 ? "-" : "",
+			
+			// number = -10  
+			//  negative => neg sign
+			//  base => 10, doesn't include neg sign nor decimal
+			// number = -10.2, base: 10
+			// number = 10.2, base: 10 
+// Main purpose of below line of code is parse out only the base.
+// base = parseInt(toFixed(Math.abs(number || 0), usePrecision), 10) + "" 
+
+			// Start with inner-most function call
+			//  1. Math.abs(number || 0)
+			//      Math.abs(number) returns pos form of number
+			// 			(number || 0) if number =undefined/null => default to 0
+			//			 however, this may cause issue later not recommeded if pass in somthing that is broken; it shouldn't work!  Defaulting it 0 may seem like it works and causes problems in your program
+
+			// 2. toFixed(), takes in number, show how many decimals to show (we are using usePrecision for that)
+			//      second argmt usePrecision default zero unless you overwrite it.
+      //      returns that number in string
+			// 3. Lets say we got back '10.20' from toFixed
+			//    ParseInt('10.20', 10) <= my argument 1 is base 10 number (we typically use this format)
+			//    ParseInt('10.20', 2) <= binary number
+			//    ParseInt('10.20', 10) <= parse integer out of string
+
+			// in summaray, parseInt(toFixed(Math.abs(number || 0), usePrecision), 10) ignore, sign and decimal points and returns base part only (returns 10 from -10.20).
+
+			// + "" <= adding empty string will convert/coerce value into string
 			base = parseInt(toFixed(Math.abs(number || 0), usePrecision), 10) + "",
+
+			// mod stands for modulo
+
+			// base.length |  mod
+			// =====================
+			//    1-3      |   0     // base.length => 3; default mod = 0
+			//     4       |   1     // base.length => 4;     4%3 mod = 1
+			//     5       |   2	 	 // base.length => 5; 		5%3 mod = 2
+			//     6       |   0		 // base.length => 6;			6%3 mod = 0
+			//     7       |   1		 // base.length => 7;			7%3 mod = 1
+			//     8       |   2		 // base.length => 8;			8%3 mod = 2
+			//     9       |   0
+			//     10      |   1
+			//     11      |   2
+
 			mod = base.length > 3 ? base.length % 3 : 0;
 
+// assumption: all number is postive for simplicity
+			// base.length |  mod  |   base         |   result   |
+			// =================================================== 
+			//    1-3      |   0   |   '100'        |  '' + '' + '100' + ''    = '100'
+			//     4       |   1   |   '1000'       |  '' + '1,' + '000' + ''  = '1,000'
+			//     5       |   2	 |   '10000'      |  '' + '10,' + '000' + '' = '10,000'
+			//     6       |   0	 |   '100000.12'  |  '' + '' + '100,' + (opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1])
+
+			//     7       |   1		practice rest pos, neg, decimal points
+			//     8       |   2		// number =  100000.12
+			//     9       |   0		// base   = '100000' remember base
+			//     10      |   1
+			//     11      |   2
+
 		// Format the number:
-		return negative + (mod ? base.substr(0, mod) + opts.thousand : "") + base.substr(mod).replace(/(\d{3})(?=\d)/g, "$1" + opts.thousand) + (usePrecision ? opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1] : "");
+		// negtive is defined above if number is pos add nothing vs '-'
+		return negative 
+// boolean value of mod, just try out !!mod or Boolean(mod) in console
+// '1000'.sustr(0, mod)
+// opts.thousand defaults ","
+// "1000".substr(0, 1) from string start at i=0 and grab 1 character => "1"
+			+ (mod ? base.substr(0, mod) + opts.thousand : "") 
+
+// '100'.substr(0) => start at 0 position give me str => '100'
+// .replace(/(\d{3})(?=\d)/g => digit metaCharacter (\d) consecutive 3 digits 
+//  {3}: quantifier, how many consecutive digits? 3
+//  It is wrapped in parenthesis (): capture group, (\d{3})
+// positive lookAhead (?=\d), match the previous pattern followed by digit, (/d)
+// if there is no match it will just return the str number ('100') with no change made
+
+// opt.thousand = , by default
+			+ base.substr(mod).replace(/(\d{3})(?=\d)/g, "$1" + opts.thousand) 
+
+// usePrecision defaults 0, falsy => go to else stmt => return ""
+/*
+* rewrite ternary operator to regular if/else
+*  usePrecision ? opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1] : ""
+* 
+* if(usePrecision === false) {
+*   return opts.decimal + toFixed( Math.abs(number), usePrecision ).split('.')[1];
+* } else {
+*		return "";
+* }
+*/
+			+ (usePrecision ? opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1] : "");
 	};
 
 
@@ -401,15 +496,19 @@
 	 * Usage: accounting.formatMoney(number, symbol, precision, thousandsSep, decimalSep, format)
 	 * Following defaults from lib.settings{} top of the file
 	 * defaults: (0, "$", 2, ",", ".", "%s%v")
-	 *
+	 * 
+	 * to see above defaults: go up file > lib.settings={
+	 *   currency: { symbol: format: decimal, thousand: precision
+	 *   }
+	 * }
+	 * 
 	 * Localise by overriding the symbol, precision, thousand / decimal separators and format
 	 * Second param can be an object matching `settings.currency` which is the easiest way.
 	 *
 	 * To do: tidy up the parameters
 	 */
 
-	 /* attaching .formatMoney as a property of lib object which lib we provide to users
-	  *	 Therefore, this lib.formatMoney gives user access to .formatMoney
+	 /* attaching .formatMoney as a property of lib object.  This is only way users have access to formatMoney
 	  */
 	var formatMoney = lib.formatMoney = function(number, symbol, precision, thousand, decimal, format) {
 		// Recursively format arrays:
@@ -421,7 +520,7 @@
 
 		// Clean up number:
 		// strips out any extra characters in case you input string for value, extracts only number value
-		//  ex: accounting.formatMoney('1 USD') output: "$1.00"
+		//  ex: accounting.formatMoney('1 USD') => $1.00
 		// Note: number is argument that has been passed in.
 		number = unformat(number);
 
@@ -452,7 +551,7 @@
 		var formats = checkCurrencyFormat(opts.format);
 
 
- /* **** this is rewrite of convoluted terninary operator useFormat *****
+ /* **** this is rewrite of terninary operator useFormat *****
 	*		var useFormat; // first declare with out giving a value
 	*   
 	*   if (number > 0) {

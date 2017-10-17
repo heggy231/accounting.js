@@ -3122,3 +3122,183 @@ function getUniqueCharacters(testString) {
 
 getUniqueCharacters('aaabbb');
 {uniqueCharacters: 2, a: 3, b: 3}
+
+- AccountingJS 21: formatNumber
+In our return to AccountingJS, we review formatNumber. This is our chance to see an example of regular expressions that uses metacharacters, quantifiers, capture groups, and positive lookaheads.
+
+Review https://watchandcode.com/courses/77710/lectures/2159594
+AccountingJS 12: checkCurrencyFormat of lib.settings part at 5min
+
+Terniary operator lesson
+https://watchandcode.com/courses/77710/lectures/2296260 
+12:30 min mark
+
+- Read this from formatNumber function
+## 
+var number = null or undefined;
+Math.abs(number||0);
+
+if number is null|undefined default to 0 otherwise, give me postive using
+  Math.abs(number)
+
+- Read this code: formatNumber function
+## base = parseInt(toFixed(Math.abs(number || 0), usePrecision), 10) + ""
+
+First start from inner
+Math.abs(number || 0): if it is null/undefined default to 0
+                        else Math.abs(number) return postive number
+
+toFixed(Math.abs(number || 0), usePrecision): toFixed is internal helper method that returns a number and how many decimal points it needs.  Default value for usePrecision is 0 decimal places unless you tell it otherwise.
+
+parseInt(number, 10), given a number based 10 only grab the integer part of the number.
+  No decimals points and return a number.
+
+20 + "", coerce number 20 into a string by adding empty string
+
+base = "20", goal is to take out the base of any number, with no signs integers
+
+- Read) mod = base.length > 3 ? base.length % 3 : 0;
+if base.length is greater than length of 3 => set mod = base.length % 3 
+  else default to mod = 0
+
+- Read) 
+## (mod ? base.substr(0, mod) + opts.thousand : "") 
+// assumption: all number is postive for simplicity
+  // base.length |  mod  |   base         |   result   |
+  // =================================================== 
+  //    1-3      |   0   |   '100'        |  '' + '' 
+  //     4       |   1   |   '1000'       |
+  //     5       |   2	 |   '10000'      |
+  //     6       |   0	 |   '100000'     |
+  //     7       |   1		 
+  //     8       |   2		 
+  //     9       |   0
+  //     10      |   1
+  //     11      |   2
+
+// Format the number:
+- when mod = 0, base= '100'
+Boolean(mod) = !!(0) is false go to else(:) stmt => "" result
+
+- READ)
+##  base.substr(mod)
+
+base.substr(mod) 
+'100'.substr(0); => "100"
+
+- substr (short for sub string) takes a portion of string starting at specific position 
+   above case position 0. 
+   ex) '123'.substr(1); => "23" returns str
+   ex) '123'.substr(2); => "3" returns str
+   ex) '123'.substr(0); => position 0, you get everthing, "123" returns str
+- .replace(), will replace if it can find any matches
+
+- Let's read regEx together (https://regexr.com/), remeber to copy expression and Text
+
+'100'.replace(/(\d{3})(?=\d)/g)
+expression: (\d{3})(?=\d)
+text: 100
+
+### 1) (/(\d{3})
+\d = digit meta character
+{3} = Qutifier, three consecutive digits
+(\d{3}) = capture group ()
+
+Note: It looks 100 would fit into this expression but look at positive lookAhead
+
+### 2) (?=\d) 
+Positive lookAhead: match the previous pattern only if it's followed by x expression
+
+?= match the previous capture group (\d{3}) => 3 consecutive digits
+\d = digit meta character
+
+Positive lookAhead match the prev pattern and followed by digit
+if you change it to 1000 it now matches.
+try it in regEx, https://regexr.com/
+
+## Result: '100'.replace(/(\d{3})(?=\d)/g) returns '100' since pattern doesn't match
+
+- READ (usePrecision ? opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1] : "");
+
+usePrecision by default is 0, falsy
+It will evaluate else stmt (2nd after :) =>  : "" => returns empty string
+  * 1st argument if: opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1]
+  * 2nd argument else: ""
+
+// base.length |  mod  |   base         |   result   
+// =====================================================================
+//    1-3      |   0   |   '100'        |  '' + '' + '100' + '' = '100'
+
+## READ + (mod ? base.substr(0, mod) + opts.thousand : "") where base = '1000', mod = 1
+- mod of 4 (lenth of digit 1000) % 3 = 1, truthy
+- '1000'.substr(0, 1) => substring 1000 start at 0 and only 1 string => '1'
+- opts.thousand default is comma (,) which is thousand separator
+- final => "1" + "," = '1,'
+
+// base.length |  mod  |   base         |   result   
+// =====================================================================
+//    4       |   1    |   '1000'       |  '' + ('1' + ',')
+//    4       |   1    |   '1000'       |  '' + '1,'
+
+## base.substr(mod).replace(/(\d{3})(?=\d)/g, "$1" + opts.thousand) where base = '1000', mod = 1
+'1000'.substr(1): take all char starting at specific i = 1. result: '000'
+- now next method .replace(/(\d{3})(?=\d)/g, "$1" + opts.thousand)
+'000'.replace(/(\d{3})(?=\d)/g, "$1" + opts.thousand) 
+* Replace if pattern matches 3 digits only if followed by 3 digits; rtn '000' no change
+
+// base.length |  mod  |   base         |   result   
+// =====================================================================
+//    4       |   1    |   '1000'       |  '' + '1,' + '000' = '1,000'
+* In summary, we added comma in correct place. That was so many steps to just achieve that when I can just do it easily in my head/eyes
+
+### READ (mod ? base.substr(0, mod) + opts.thousand : "") where base = '10000', mod = 2
+true? '10000'.substr(0,2) including i=0 and include 2 characters => "10"
++ opts.thousand defaults to comma => ,
+Result: '10' + , => '10,'
+
+// base.length |  mod  |   base         |   result   
+// =====================================================================
+//    5        |   2   |   '10000'      |  '' + '10,'
+
+### READ + base.substr(mod).replace(/(\d{3})(?=\d)/g, "$1" + opts.thousand) where base = '10000', mod = 2
+'10000'.substr(2) => including at i=2 substring => '000'
+'000'.replace(/(\d{3})(?=\d)/g) => no match therefore no change => '000'
+Note: "$1" + opts.thousand second argument in .replace doesn't get run.
+
+// base.length |  mod  |   base         |   result   
+// =====================================================================
+//    5        |   2   |   '10000'      |  '' + '10,' + '000'
+
+### READ + (usePrecision ? opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1] : "");
+usePrecision assume default 0 => false => else (what follows :) return "";
+
+// base.length |  mod  |   base         |   result   
+// =========================================================================
+//    5        |   2   |   '10000'      |  '' + '10,' + '000' + "" = '10,000'
+
+## READ ('100000'.replace(/(\d{3})(?=\d)/g, "$1" + opts.thousand))
+  1) '100000' pattern matches 3# follow by digits result => '(100)000'
+  2) "$1" refers to the first matched result which is 100
+      - replace with 100 ( from "$1" + opts.thousand defaults to comma (,) )
+  * Final result: '100' + ',' = '100,'
+
+## READ (usePrecision ? opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1] : "");  where base = '100000', mod = 0, usePrecision = 2
+ - usePrecision is 2, truthy therefore evaluate the if stmt
+ - opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1]
+
+
+### Challenge: HW - work on your own, you need to practice thinking through this type of logic
+
+// assumption: all number is postive for simplicity
+			// base.length |  mod  |   base         |   result   |
+			// =================================================== 
+			//    1-3      |   0   |   '100'        |  '' + '' + '100' + ''    = '100'
+			//     4       |   1   |   '1000'       |  '' + '1,' + '000' + ''  = '1,000'
+			//     5       |   2	 |   '10000'      |  '' + '10,' + '000' + '' = '10,000'
+			//     6       |   0	 |   '100000.12'  |
+			
+			//     7       |   1		practice rest pos, neg, decimal points
+			//     8       |   2		// number =  100000.12
+			//     9       |   0		// base   = '100000' remember base
+			//     10      |   1
+			//     11      |   2
