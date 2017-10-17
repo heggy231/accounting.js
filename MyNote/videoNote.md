@@ -3276,16 +3276,51 @@ usePrecision assume default 0 => false => else (what follows :) return "";
 // =========================================================================
 //    5        |   2   |   '10000'      |  '' + '10,' + '000' + "" = '10,000'
 
-## READ ('100000'.replace(/(\d{3})(?=\d)/g, "$1" + opts.thousand))
+## READ '100000'.replace(/(\d{3})(?=\d)/g, "$1" + opts.thousand)
   1) '100000' pattern matches 3# follow by digits result => '(100)000'
-  2) "$1" refers to the first matched result which is 100
-      - replace with 100 ( from "$1" + opts.thousand defaults to comma (,) )
-  * Final result: '100' + ',' = '100,'
+  2) .replace with whatever matched ("$1" refers to the first matched result) which is 100
+     Add , (opts.thousand)
+      
+  * Final result: '(100)000'.replace(/(\d{3})(?=\d)/g), "$1" + opts.thousand
+    Note: (100) notates patterned matched, replace 100 portion with "100" + "," 
+    Result: "100,000"
 
-## READ (usePrecision ? opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1] : "");  where base = '100000', mod = 0, usePrecision = 2
+// base.length |  mod  |   base         |   result   
+// =========================================================================
+//    6        |   0   |   '100000'     |  '' + '' + '100,000'
+## Resource about referring pattern matching result by "$1":
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/n
+
+## READ (usePrecision ? opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1] : "");  where number =100000.12, base = '100000', mod = 0, usePrecision = 2,  
  - usePrecision is 2, truthy therefore evaluate the if stmt
- - opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1]
+ * opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1]
 
+ - opts.decimal => '.' by default
+
+Next, '.' + toFixed(Math.abs(number), usePrecision).split('.')[1]
+- toFixed(Math.abs(number), usePrecision)
+toFixed(Math.abs(100000.12), usePrecision)
+Math.abs(number) number => 100000.12
+
+toFixed(100000.12, usePrecision): turns into str with specified no of decimal points, usePrecision is 2 therefore, 2 decimal points
+
+* toFixed(100000.12, 2) <= convert 100000.12 into string with precision of 2 decimal points
+* Result: '100000.12'
+
+// base.length |  mod  | number    |   base      |  result   
+// ==========================================================================================
+//    6        |   0   | 100000.12 |   '100000'  | '' + '' + '100,000' + '100000.12'.split('.')[1]
+
+- '100000.12'.split('.')[1] => '12'
+'100000.12'.split('.'), splits at specified character; ie: '.'
+it will split stringinto array of ['10000', '12'] which is split at decimal
+
+.split('.')[1]:
+Then, grab i=1 output: '12'
+
+// base.length |  mod  | number    |   base      |  result   
+// ==========================================================================================
+//    6        |   0   | 100000.12 |   '100000'  | '' + '' + '100,' + '100000.12'.split('.')[1]
 
 ### Challenge: HW - work on your own, you need to practice thinking through this type of logic
 

@@ -448,7 +448,7 @@
 			//    1-3      |   0   |   '100'        |  '' + '' + '100' + ''    = '100'
 			//     4       |   1   |   '1000'       |  '' + '1,' + '000' + ''  = '1,000'
 			//     5       |   2	 |   '10000'      |  '' + '10,' + '000' + '' = '10,000'
-			//     6       |   0	 |   '100000.12'  |  '' + '' + '100,' + (opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1])
+			//     6       |   0	 |   '100000.12'  |  '' + '' + '100,000' + '.' + '12' = '100,000.12'
 
 			//     7       |   1		practice rest pos, neg, decimal points
 			//     8       |   2		// number =  100000.12
@@ -486,6 +486,9 @@
 *		return "";
 * }
 */
+// when usePrecision = 2 when number = 100000.12
+//  opts.decimal = '.',  toFixed(100000.12, 2) = toFixed convert to string with specified number of decimal points (2). Result: '100000.12'
+//  .split
 			+ (usePrecision ? opts.decimal + toFixed(Math.abs(number), usePrecision).split('.')[1] : "");
 	};
 
